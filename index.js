@@ -44,28 +44,22 @@ function generatePaymentLink(paymentId, amount, email) {
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Добавляем маршрут для проверки корневого URL
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+
+// Обработка запросов от Robokassa на ResultURL
 app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email, PaymentStatus, Fee, PaymentMethod, IncCurrLabel, ...userParams } = req.body;
+  const { InvId, OutSum, SignatureValue, Email, PaymentStatus, Fee, PaymentMethod, IncCurrLabel } = req.body;
 
-  // Определяем, есть ли пользовательские параметры
-  let paramsString = `${OutSum}:${InvId}:${process.env.ROBO_SECRET2}`;
-  
-  if (Object.keys(userParams).length > 0) {
-    // Добавляем пользовательские параметры к строке для расчета подписи
-    const userParamsString = Object.keys(userParams)
-      .map(key => `${key}=${userParams[key]}`)
-      .join(':');
-    paramsString += `:${userParamsString}`;
-  }
-
-  // Вычисляем ожидаемую подпись
+  // Проверьте подпись для подтверждения подлинности уведомления
+  const secretKey2 = process.env.ROBO_SECRET2;
   const expectedSignature = crypto
     .createHash("md5")
-    .update(paramsString)
-    .digest("hex")
-    .toUpperCase(); // Обратите внимание на верхний регистр
+    .update(`${OutSum}:${InvId}:${secretKey2}`)
+    .digest("hex");
 
-  // Проверка подписи
   if (SignatureValue !== expectedSignature) {
     console.error('Invalid signature');
     return res.status(400).send("Invalid signature");
@@ -94,7 +88,7 @@ app.post("/webhook/robokassa", async (req, res) => {
     console.error('Unknown payment status');
   }
 
-  // Отправляем ответ OK
+  // Отправляем ответ Robokassa, что все в порядке
   res.status(200).send(`OK${InvId}`);
 });
 
@@ -230,8 +224,9 @@ bot.on("message:text", async (ctx) => {
 });
 
 // Запуск сервера
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
 // Запуск бота
