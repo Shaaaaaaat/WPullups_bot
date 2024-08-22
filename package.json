@@ -20,7 +20,9 @@
     "grammy": "^1.29.0",
     "mongodb": "^6.8.0",
     "mongoose": "^8.5.3",
-    "nodemon": "^3.1.4",
     "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }
