@@ -44,14 +44,9 @@ function generatePaymentLink(paymentId, amount, email) {
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Добавляем маршрут для проверки корневого URL
-app.get('/', (req, res) => {
-  res.send('Server is running');
-});
-
-// Обработка запросов от Robokassa на ResultURL
+// Обработчик для webhook
 app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email, PaymentStatus, Fee, PaymentMethod, IncCurrLabel } = req.body;
+  const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
 
   // Проверьте подпись для подтверждения подлинности уведомления
   const secretKey2 = process.env.ROBO_SECRET2;
@@ -88,9 +83,13 @@ app.post("/webhook/robokassa", async (req, res) => {
     console.error('Unknown payment status');
   }
 
-  // Отправляем ответ Robokassa, что все в порядке
   res.status(200).send(`OK${InvId}`);
 });
+
+// Установите вебхук URL
+const webhookUrl = process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`;
+bot.api.deleteWebhook(); // Удалите предыдущий вебхук
+bot.api.setWebhook(webhookUrl); // Установите новый вебхук
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
@@ -224,24 +223,28 @@ bot.on("message:text", async (ctx) => {
 });
 
 // Запуск сервера
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-// Запуск бота
-bot.start();
 
 // Ловим ошибки бота
 bot.catch((err) => {
   const ctx = err.ctx;
-  console.error(`Error while handlingобновление update ${ctx.update.update_id}:`);
+  console.error(`Error while handling update ${ctx.update.update_id}:`);
 
   const e = err.error;
   if (e instanceof Error) {
-    console.error("Error in request:", e.message);
+    console.error("```javascript
+Error in request:", e.message);
   } else {
     console.error("Unknown error:", e);
   }
 });
 
+// Остановка бота (необходимо для остановки предыдущих вебхуков и запуска новых)
+bot.api.deleteWebhook(); // Удалите предыдущий вебхук, если он существует
+bot.api.setWebhook(process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`); // Установите новый вебхук
+
+// Запуск бота
+bot.start();
