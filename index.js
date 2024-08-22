@@ -39,7 +39,7 @@ function generatePaymentLink(paymentId, amount) {
     .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=1`; // Используйте https://auth.robokassa.ru/ для продакшена
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
 // Создаем и настраиваем Express-приложение
