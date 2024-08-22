@@ -46,7 +46,7 @@ function generatePaymentLink(paymentId, amount, email) {
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post("/webhook/robokassa", async (req, res) => {
+app.post("https://webinar-production-4420.up.railway.app/webhook/robokassa", async (req, res) => {
   const { InvId, OutSum, SignatureValue, Email } = req.body;
 
   // Проверьте подпись для подтверждения подлинности уведомления
