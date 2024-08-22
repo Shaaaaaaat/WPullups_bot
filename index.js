@@ -45,15 +45,27 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
+  const { InvId, OutSum, SignatureValue, Email, PaymentStatus, Fee, PaymentMethod, IncCurrLabel, ...userParams } = req.body;
 
-  // Проверьте подпись для подтверждения подлинности уведомления
-  const secretKey2 = process.env.ROBO_SECRET2;
+  // Определяем, есть ли пользовательские параметры
+  let paramsString = `${OutSum}:${InvId}:${process.env.ROBO_SECRET2}`;
+  
+  if (Object.keys(userParams).length > 0) {
+    // Добавляем пользовательские параметры к строке для расчета подписи
+    const userParamsString = Object.keys(userParams)
+      .map(key => `${key}=${userParams[key]}`)
+      .join(':');
+    paramsString += `:${userParamsString}`;
+  }
+
+  // Вычисляем ожидаемую подпись
   const expectedSignature = crypto
     .createHash("md5")
-    .update(`${OutSum}:${InvId}:${secretKey2}`)
-    .digest("hex");
+    .update(paramsString)
+    .digest("hex")
+    .toUpperCase(); // Обратите внимание на верхний регистр
 
+  // Проверка подписи
   if (SignatureValue !== expectedSignature) {
     console.error('Invalid signature');
     return res.status(400).send("Invalid signature");
@@ -82,7 +94,7 @@ app.post("/webhook/robokassa", async (req, res) => {
     console.error('Unknown payment status');
   }
 
-  // Отправляем корректный ответ
+  // Отправляем ответ OK
   res.status(200).send(`OK${InvId}`);
 });
 
@@ -228,12 +240,4 @@ bot.start();
 // Ловим ошибки бота
 bot.catch((err) => {
   const ctx = err.ctx;
-  console.error(`Error while handling update ${ctx.update.update_id}:`);
-
-  const e = err.error;
-  if (e instanceof Error) {
-    console.error("Error in request:", e.message);
-  } else {
-    console.error("Unknown error:", e);
-  }
-});
+  console.error(`Error while handling
