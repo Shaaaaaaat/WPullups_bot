@@ -29,7 +29,7 @@ function generateUniqueId() {
 }
 
 // Функция для генерации ссылки на оплату
-function generatePaymentLink(paymentId, amount) {
+function generatePaymentLink(paymentId, amount, email) {
   const shopId = process.env.ROBO_ID; // Логин вашего магазина в Робокассе
   const secretKey1 = process.env.ROBO_SECRET1; // Secret Key 1 для формирования подписи
 
@@ -39,7 +39,7 @@ function generatePaymentLink(paymentId, amount) {
     .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0&Email=${encodeURIComponent(email)}`;
 }
 
 // Создаем и настраиваем Express-приложение
@@ -47,7 +47,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue } = req.body;
+  const { InvId, OutSum, SignatureValue, Email } = req.body;
 
   // Проверьте подпись для подтверждения подлинности уведомления
   const secretKey2 = process.env.ROBO_SECRET2;
@@ -66,6 +66,7 @@ app.post("/webhook/robokassa", async (req, res) => {
   if (session) {
     // Обновите статус оплаты в базе данных
     session.paymentStatus = "success";
+    session.email = Email; // Обновите email в базе данных
     await session.save();
 
     // Отправьте сообщение пользователю через бота
@@ -118,8 +119,8 @@ bot.on("callback_query:data", async (ctx) => {
     session.paymentId = paymentId;
     await session.save();
 
-    // Отправьте ссылку на оплату с уникальным paymentId
-    await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3)}`);
+    // Отправьте ссылку на оплату с уникальным paymentId и email
+    await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`);
   } else if (action === "rubles" || action === "euros") {
     if (action === "rubles") {
       // Создайте уникальный paymentId для этой транзакции
@@ -127,10 +128,8 @@ bot.on("callback_query:data", async (ctx) => {
       session.paymentId = paymentId;
       await session.save();
 
-      // Отправьте ссылку на оплату
-      await ctx.reply(
-        `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3)}`
-      );
+      // Отправьте ссылку на оплату с уникальным paymentId и email
+      await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`);
     } else {
       await ctx.reply(messages.paymentLinkEuros);
     }
