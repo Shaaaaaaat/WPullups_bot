@@ -24,7 +24,6 @@ function generateUniqueId() {
   const maxId = 2147483647; // Максимально допустимое значение
   const minId = 1; // Минимально допустимое значение
 
-  // Используем Date.now() и ограничиваем его до максимального значения
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
@@ -33,7 +32,6 @@ function generatePaymentLink(paymentId, amount, email) {
   const shopId = process.env.ROBO_ID; // Логин вашего магазина в Робокассе
   const secretKey1 = process.env.ROBO_SECRET1; // Secret Key 1 для формирования подписи
 
-  // Формируем строку для подписи
   const signature = crypto
     .createHash("md5")
     .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
@@ -57,28 +55,31 @@ app.post("/webhook/robokassa", async (req, res) => {
     .digest("hex");
 
   if (SignatureValue !== expectedSignature) {
+    console.error('Invalid signature');
     return res.status(400).send("Invalid signature");
   }
 
-  // Проверка статуса платежа
-  if (PaymentStatus === "failed") {
-    const session = await Session.findOne({ paymentId: InvId });
-    if (session) {
-      // Отправьте сообщение пользователю о неудачной оплате
-      await bot.api.sendMessage(session.userId, "Оплата не прошла. Пожалуйста, попробуйте снова.");
-    }
-    return res.status(200).send("OK");
-  }
-
-  // Обработка успешного платежа
+  // Обработка статуса платежа
   const session = await Session.findOne({ paymentId: InvId });
-  if (session) {
-    session.paymentStatus = "success";
-    session.email = Email; // Обновите email в базе данных
-    await session.save();
-    await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
+
+  if (PaymentStatus === "failed") {
+    if (session) {
+      await bot.api.sendMessage(session.userId, "Оплата не прошла. Пожалуйста, попробуйте снова.");
+    } else {
+      console.error('Session not found for failed payment');
+    }
+  } else if (PaymentStatus === "success") {
+    if (session) {
+      session.paymentStatus = "success";
+      session.email = Email; // Обновите email в базе данных
+      await session.save();
+      await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
+    } else {
+      console.error('Session not found for successful payment');
+      await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
+    }
   } else {
-    await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
+    console.error('Unknown payment status');
   }
 
   res.status(200).send("OK");
@@ -86,7 +87,6 @@ app.post("/webhook/robokassa", async (req, res) => {
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
-  // Сохраняем данные пользователя в базе данных
   await Session.findOneAndUpdate(
     { userId: ctx.from.id.toString() },
     { userId: ctx.from.id.toString(), step: "start" },
@@ -120,27 +120,22 @@ bot.on("callback_query:data", async (ctx) => {
     });
     session.step = "awaiting_edit";
   } else if (action === "confirm_payment") {
-    // Создайте уникальный paymentId для этой транзакции
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
     await session.save();
 
-    // Отправьте ссылку на оплату с уникальным paymentId и email
     await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`);
   } else if (action === "rubles" || action === "euros") {
     if (action === "rubles") {
-      // Создайте уникальный paymentId для этой транзакции
       const paymentId = generateUniqueId();
       session.paymentId = paymentId;
       await session.save();
 
-      // Отправьте ссылку на оплату с уникальным paymentId и email
       await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`);
     } else {
       await ctx.reply(messages.paymentLinkEuros);
     }
   } else if (action.startsWith("edit_")) {
-    // Начинаем редактирование выбранного поля
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
       messages[
@@ -188,7 +183,6 @@ bot.on("message:text", async (ctx) => {
 
     session.step = "awaiting_confirmation";
   } else if (session.step.startsWith("awaiting_edit_")) {
-    // Обработка исправлений данных
     const field = session.step.replace("awaiting_edit_", "");
     if (field === "name") {
       session.name = ctx.message.text;
@@ -227,13 +221,15 @@ app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
 
+// Запуск бота
+bot.start();
+
+// Ловим ошибки бота
 bot.catch((err) => {
   const ctx = err.ctx;
   console.error(`Error while handling update ${ctx.update.update_id}:`);
 
   const e = err.error;
-
-
   if (e instanceof Error) {
     console.error("Error in request:", e.message);
   } else {
