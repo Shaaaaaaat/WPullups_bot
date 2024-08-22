@@ -234,9 +234,9 @@ bot.catch((err) => {
   console.error(`Error while handling update ${ctx.update.update_id}:`);
 
   const e = err.error;
+
   if (e instanceof Error) {
-    console.error("```javascript
-Error in request:", e.message);
+    console.error("Error in request:", e.message);
   } else {
     console.error("Unknown error:", e);
   }
