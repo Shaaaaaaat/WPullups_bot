@@ -47,7 +47,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email } = req.body;
+  const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
 
   // Проверьте подпись для подтверждения подлинности уведомления
   const secretKey2 = process.env.ROBO_SECRET2;
@@ -60,16 +60,22 @@ app.post("/webhook/robokassa", async (req, res) => {
     return res.status(400).send("Invalid signature");
   }
 
-  // Найдите сессию в базе данных по InvId
-  const session = await Session.findOne({ paymentId: InvId });
+  // Проверка статуса платежа
+  if (PaymentStatus === "failed") {
+    const session = await Session.findOne({ paymentId: InvId });
+    if (session) {
+      // Отправьте сообщение пользователю о неудачной оплате
+      await bot.api.sendMessage(session.userId, "Оплата не прошла. Пожалуйста, попробуйте снова.");
+    }
+    return res.status(200).send("OK");
+  }
 
+  // Обработка успешного платежа
+  const session = await Session.findOne({ paymentId: InvId });
   if (session) {
-    // Обновите статус оплаты в базе данных
     session.paymentStatus = "success";
     session.email = Email; // Обновите email в базе данных
     await session.save();
-
-    // Отправьте сообщение пользователю через бота
     await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
   } else {
     await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
@@ -227,6 +233,7 @@ bot.catch((err) => {
 
   const e = err.error;
 
+```javascript
   if (e instanceof Error) {
     console.error("Error in request:", e.message);
   } else {
