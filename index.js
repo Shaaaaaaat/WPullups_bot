@@ -243,8 +243,8 @@ bot.catch((err) => {
 });
 
 // Остановка бота (необходимо для остановки предыдущих вебхуков и запуска новых)
-bot.api.deleteWebhook(); // Удалите предыдущий вебхук, если он существует
-bot.api.setWebhook(process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`); // Установите новый вебхук
+// bot.api.deleteWebhook(); // Удалите предыдущий вебхук, если он существует
+// bot.api.setWebhook(process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`); // Установите новый вебхук
 
 // Запуск бота
 bot.start();
