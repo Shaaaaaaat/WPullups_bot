@@ -233,7 +233,7 @@ bot.catch((err) => {
 
   const e = err.error;
 
-```javascript
+
   if (e instanceof Error) {
     console.error("Error in request:", e.message);
   } else {
