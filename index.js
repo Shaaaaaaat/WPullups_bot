@@ -82,7 +82,8 @@ app.post("/webhook/robokassa", async (req, res) => {
     console.error('Unknown payment status');
   }
 
-  res.status(200).send("OK");
+  // Отправляем корректный ответ
+  res.status(200).send(`OK${InvId}`);
 });
 
 // Обработчик команд бота
@@ -236,5 +237,3 @@ bot.catch((err) => {
     console.error("Unknown error:", e);
   }
 });
-
-bot.start();
