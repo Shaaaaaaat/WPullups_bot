@@ -240,4 +240,13 @@ bot.start();
 // Ловим ошибки бота
 bot.catch((err) => {
   const ctx = err.ctx;
-  console.error(`Error while handling
+  console.error(`Error while handlingобновление update ${ctx.update.update_id}:`);
+
+  const e = err.error;
+  if (e instanceof Error) {
+    console.error("Error in request:", e.message);
+  } else {
+    console.error("Unknown error:", e);
+  }
+});
+
