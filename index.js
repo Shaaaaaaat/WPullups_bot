@@ -216,6 +216,7 @@ const setWebhook = async () => {
   try {
     // Удаление старого вебхука
     await bot.api.deleteWebhook();
+    console.log("Previous webhook deleted");
 
     // Установка нового вебхука
     await bot.api.setWebhook(
