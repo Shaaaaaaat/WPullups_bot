@@ -37,9 +37,13 @@ function generatePaymentLink(paymentId, amount, email) {
     .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
+<<<<<<< HEAD
   return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0&Email=${encodeURIComponent(
     email
   )}`;
+=======
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0&Email=${encodeURIComponent(email)}`;
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
 }
 
 // Создаем и настраиваем Express-приложение
@@ -58,7 +62,11 @@ app.post("/webhook/robokassa", async (req, res) => {
     .digest("hex");
 
   if (SignatureValue !== expectedSignature) {
+<<<<<<< HEAD
     console.error("Invalid signature");
+=======
+    console.error('Invalid signature');
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
     return res.status(400).send("Invalid signature");
   }
 
@@ -67,12 +75,18 @@ app.post("/webhook/robokassa", async (req, res) => {
 
   if (PaymentStatus === "failed") {
     if (session) {
+<<<<<<< HEAD
       await bot.api.sendMessage(
         session.userId,
         "Оплата не прошла. Пожалуйста, попробуйте снова."
       );
     } else {
       console.error("Session not found for failed payment");
+=======
+      await bot.api.sendMessage(session.userId, "Оплата не прошла. Пожалуйста, попробуйте снова.");
+    } else {
+      console.error('Session not found for failed payment');
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
     }
   } else if (PaymentStatus === "success") {
     if (session) {
@@ -81,6 +95,7 @@ app.post("/webhook/robokassa", async (req, res) => {
       await session.save();
       await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
     } else {
+<<<<<<< HEAD
       console.error("Session not found for successful payment");
       await bot.api.sendMessage(
         session.userId,
@@ -89,15 +104,26 @@ app.post("/webhook/robokassa", async (req, res) => {
     }
   } else {
     console.error("Unknown payment status");
+=======
+      console.error('Session not found for successful payment');
+      await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
+    }
+  } else {
+    console.error('Unknown payment status');
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
   }
 
   res.status(200).send(`OK${InvId}`);
 });
 
 // Установите вебхук URL
+<<<<<<< HEAD
 const webhookUrl =
   process.env.WEBHOOK_URL ||
   `https://webinar-production-4420.up.railway.app/webhook/robokassa`;
+=======
+const webhookUrl = process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`;
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
 bot.api.deleteWebhook(); // Удалите предыдущий вебхук
 bot.api.setWebhook(webhookUrl); // Установите новый вебхук
 
@@ -140,15 +166,20 @@ bot.on("callback_query:data", async (ctx) => {
     session.paymentId = paymentId;
     await session.save();
 
+<<<<<<< HEAD
     await ctx.reply(
       `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`
     );
+=======
+    await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`);
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
   } else if (action === "rubles" || action === "euros") {
     if (action === "rubles") {
       const paymentId = generateUniqueId();
       session.paymentId = paymentId;
       await session.save();
 
+<<<<<<< HEAD
       await ctx.reply(
         `Оплатите по ссылке: ${generatePaymentLink(
           paymentId,
@@ -156,6 +187,9 @@ bot.on("callback_query:data", async (ctx) => {
           session.email
         )}`
       );
+=======
+      await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`);
+>>>>>>> 2577f291ffceafd2efb66396a57b790d8465a287
     } else {
       await ctx.reply(messages.paymentLinkEuros);
     }
