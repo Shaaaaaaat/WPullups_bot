@@ -1,11 +1,11 @@
 require("dotenv").config();
+const express = require("express");
+const bodyParser = require("body-parser");
+const crypto = require("crypto");
 const { Bot, InlineKeyboard } = require("grammy");
 const connectDB = require("./database");
 const Session = require("./sessionModel");
 const fs = require("fs");
-const crypto = require("crypto");
-const express = require("express");
-const bodyParser = require("body-parser");
 
 // Создаем экземпляр бота
 const bot = new Bot(process.env.BOT_API_KEY); // Ваш API ключ от Telegram бота
@@ -14,21 +14,18 @@ const bot = new Bot(process.env.BOT_API_KEY); // Ваш API ключ от Telegr
 connectDB();
 
 // Функция для загрузки сообщений из JSON-файла
-const loadMessages = () => {
-  return JSON.parse(fs.readFileSync("messages.json", "utf8"));
-};
+const loadMessages = () => JSON.parse(fs.readFileSync("messages.json", "utf8"));
 const messages = loadMessages();
 
 // Функция для генерации уникального ID в допустимом диапазоне
 function generateUniqueId() {
   const maxId = 2147483647; // Максимально допустимое значение
   const minId = 1; // Минимально допустимое значение
-
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
 // Функция для генерации ссылки на оплату
-function generatePaymentLink(paymentId, amount, email) {
+function generatePaymentLink(paymentId, amount) {
   const shopId = process.env.ROBO_ID; // Логин вашего магазина в Робокассе
   const secretKey1 = process.env.ROBO_SECRET1; // Secret Key 1 для формирования подписи
 
@@ -44,7 +41,7 @@ function generatePaymentLink(paymentId, amount, email) {
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Обработчик для webhook
+// Обработчик для webhook Робокассы
 app.post("/webhook/robokassa", async (req, res) => {
   const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
 
@@ -212,9 +209,9 @@ bot.on("message:text", async (ctx) => {
 });
 
 // Запуск сервера
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const port = process.env.PORT || 3000;
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on port ${port}`);
 });
 
 // Ловим ошибки бота
@@ -230,10 +227,6 @@ bot.catch((err) => {
     console.error("Unknown error:", e);
   }
 });
-
-// Остановка бота (необходимо для остановки предыдущих вебхуков и запуска новых)
-// bot.api.deleteWebhook(); // Удалите предыдущий вебхук, если он существует
-// bot.api.setWebhook(process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`); // Установите новый вебхук
 
 // Запуск бота
 bot.start();
