@@ -211,12 +211,17 @@ bot.on("message:text", async (ctx) => {
   await session.save();
 });
 
-// Установка вебхука
-const setWebhook = async () => {
+// Проверка и установка вебхука
+const setupWebhook = async () => {
   try {
-    // Удаление старого вебхука
-    await bot.api.deleteWebhook();
-    console.log("Previous webhook deleted");
+    // Получение информации о текущем вебхуке
+    const webhookInfo = await bot.api.getWebhookInfo();
+
+    if (webhookInfo.url) {
+      console.log("Existing webhook found, deleting it...");
+      await bot.api.deleteWebhook();
+      console.log("Previous webhook deleted");
+    }
 
     // Установка нового вебхука
     await bot.api.setWebhook(
@@ -233,7 +238,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
   // Установка вебхука после запуска сервера
-  setWebhook();
+  setupWebhook();
 });
 
 // Ловим ошибки бота
