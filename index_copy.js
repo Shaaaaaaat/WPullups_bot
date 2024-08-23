@@ -24,6 +24,7 @@ function generateUniqueId() {
   const maxId = 2147483647; // Максимально допустимое значение
   const minId = 1; // Минимально допустимое значение
 
+  // Используем Date.now() и ограничиваем его до максимального значения
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
@@ -32,6 +33,7 @@ function generatePaymentLink(paymentId, amount, email) {
   const shopId = process.env.ROBO_ID; // Логин вашего магазина в Робокассе
   const secretKey1 = process.env.ROBO_SECRET1; // Secret Key 1 для формирования подписи
 
+  // Формируем строку для подписи
   const signature = crypto
     .createHash("md5")
     .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
@@ -46,9 +48,8 @@ function generatePaymentLink(paymentId, amount, email) {
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Обработчик для webhook
 app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
+  const { InvId, OutSum, SignatureValue, Email } = req.body;
 
   // Проверьте подпись для подтверждения подлинности уведомления
   const secretKey2 = process.env.ROBO_SECRET2;
@@ -58,51 +59,30 @@ app.post("/webhook/robokassa", async (req, res) => {
     .digest("hex");
 
   if (SignatureValue !== expectedSignature) {
-    console.error("Invalid signature");
     return res.status(400).send("Invalid signature");
   }
 
-  // Обработка статуса платежа
+  // Найдите сессию в базе данных по InvId
   const session = await Session.findOne({ paymentId: InvId });
 
-  if (PaymentStatus === "failed") {
-    if (session) {
-      await bot.api.sendMessage(
-        session.userId,
-        "Оплата не прошла. Пожалуйста, попробуйте снова."
-      );
-    } else {
-      console.error("Session not found for failed payment");
-    }
-  } else if (PaymentStatus === "success") {
-    if (session) {
-      session.paymentStatus = "success";
-      session.email = Email; // Обновите email в базе данных
-      await session.save();
-      await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
-    } else {
-      console.error("Session not found for successful payment");
-      await bot.api.sendMessage(
-        session.userId,
-        "Не удалось подтвердить оплату"
-      );
-    }
+  if (session) {
+    // Обновите статус оплаты в базе данных
+    session.paymentStatus = "success";
+    session.email = Email; // Обновите email в базе данных
+    await session.save();
+
+    // Отправьте сообщение пользователю через бота
+    await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
   } else {
-    console.error("Unknown payment status");
+    await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
   }
 
-  res.status(200).send(`OK${InvId}`);
+  res.status(200).send("OK");
 });
-
-// Установите вебхук URL
-const webhookUrl =
-  process.env.WEBHOOK_URL ||
-  `https://webinar-production-4420.up.railway.app/webhook/robokassa`;
-bot.api.deleteWebhook(); // Удалите предыдущий вебхук
-bot.api.setWebhook(webhookUrl); // Установите новый вебхук
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
+  // Сохраняем данные пользователя в базе данных
   await Session.findOneAndUpdate(
     { userId: ctx.from.id.toString() },
     { userId: ctx.from.id.toString(), step: "start" },
@@ -136,19 +116,23 @@ bot.on("callback_query:data", async (ctx) => {
     });
     session.step = "awaiting_edit";
   } else if (action === "confirm_payment") {
+    // Создайте уникальный paymentId для этой транзакции
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
     await session.save();
 
+    // Отправьте ссылку на оплату с уникальным paymentId и email
     await ctx.reply(
       `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`
     );
   } else if (action === "rubles" || action === "euros") {
     if (action === "rubles") {
+      // Создайте уникальный paymentId для этой транзакции
       const paymentId = generateUniqueId();
       session.paymentId = paymentId;
       await session.save();
 
+      // Отправьте ссылку на оплату с уникальным paymentId и email
       await ctx.reply(
         `Оплатите по ссылке: ${generatePaymentLink(
           paymentId,
@@ -160,6 +144,7 @@ bot.on("callback_query:data", async (ctx) => {
       await ctx.reply(messages.paymentLinkEuros);
     }
   } else if (action.startsWith("edit_")) {
+    // Начинаем редактирование выбранного поля
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
       messages[
@@ -207,6 +192,7 @@ bot.on("message:text", async (ctx) => {
 
     session.step = "awaiting_confirmation";
   } else if (session.step.startsWith("awaiting_edit_")) {
+    // Обработка исправлений данных
     const field = session.step.replace("awaiting_edit_", "");
     if (field === "name") {
       session.name = ctx.message.text;
@@ -241,12 +227,10 @@ bot.on("message:text", async (ctx) => {
 });
 
 // Запуск сервера
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(3000, () => {
+  console.log("Server is running on port 3000");
 });
 
-// Ловим ошибки бота
 bot.catch((err) => {
   const ctx = err.ctx;
   console.error(`Error while handling update ${ctx.update.update_id}:`);
@@ -260,9 +244,4 @@ bot.catch((err) => {
   }
 });
 
-// Остановка бота (необходимо для остановки предыдущих вебхуков и запуска новых)
-// bot.api.deleteWebhook(); // Удалите предыдущий вебхук, если он существует
-// bot.api.setWebhook(process.env.WEBHOOK_URL || `https://webinar-production-4420.up.railway.app/webhook/robokassa`); // Установите новый вебхук
-
-// Запуск бота
 bot.start();
