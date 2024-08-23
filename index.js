@@ -211,14 +211,8 @@ bot.on("message:text", async (ctx) => {
   await session.save();
 });
 
-// Запуск сервера
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
 // Установка вебхука
-(async () => {
+const setWebhook = async () => {
   try {
     // Удаление старого вебхука
     await bot.api.deleteWebhook();
@@ -227,10 +221,19 @@ app.listen(PORT, "0.0.0.0", () => {
     await bot.api.setWebhook(
       process.env.WEBHOOK_URL || `https://your-webhook-url`
     );
+    console.log("Webhook set successfully");
   } catch (error) {
     console.error("Failed to set webhook:", error);
   }
-})();
+};
+
+// Запуск сервера
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
+  // Установка вебхука после запуска сервера
+  setWebhook();
+});
 
 // Ловим ошибки бота
 bot.catch((err) => {
