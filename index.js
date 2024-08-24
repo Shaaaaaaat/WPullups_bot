@@ -114,7 +114,18 @@ bot.on("callback_query:data", async (ctx) => {
     });
     session.step = "awaiting_edit";
   } else if (action === "confirm_payment") {
-    // Здесь ничего не изменяем, это будет обрабатываться в text message handler
+    if (session.step === "awaiting_confirmation") {
+      await ctx.reply("Какой картой хотите произвести оплату?", {
+        reply_markup: new InlineKeyboard()
+          .add({
+            text: "Российской (оплата в рублях)",
+            callback_data: "rubles",
+          })
+          .add({ text: "Зарубежной (оплата в евро)", callback_data: "euros" }),
+      });
+      session.step = "awaiting_payment_type";
+      await session.save();
+    }
   } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
@@ -150,9 +161,8 @@ bot.on("callback_query:data", async (ctx) => {
         }`
       ]
     );
+    await session.save();
   }
-
-  await session.save();
 });
 
 // Обработчик для ввода данных
@@ -228,9 +238,8 @@ bot.on("message:text", async (ctx) => {
     });
 
     session.step = "awaiting_confirmation";
+    await session.save();
   }
-
-  await session.save();
 });
 
 // Запуск бота с долгим опросом
