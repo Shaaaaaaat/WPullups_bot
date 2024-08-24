@@ -4,6 +4,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const fs = require("fs");
+const axios = require("axios");
 const connectDB = require("./database");
 const Session = require("./sessionModel");
 
@@ -39,41 +40,41 @@ function generatePaymentLink(paymentId, amount, email) {
   return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
+// Функция для отправки данных в Airtable
+async function sendToAirtable(name, email, phone, tgId) {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const tableId = process.env.AIRTABLE_TABLE_ID;
+
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const data = {
+    fields: {
+      FIO: name,
+      email: email,
+      Phone: phone,
+      tgId: tgId,
+      Tag: "Webinar",
+    },
+  };
+
+  try {
+    await axios.post(url, data, { headers });
+  } catch (error) {
+    console.error(
+      "Error sending data to Airtable:",
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
 // Создаем и настраиваем Express-приложение
 const app = express();
 app.use(bodyParser.json()); // Используем JSON для обработки запросов от Telegram и Робокассы
-
-// Обработчик для webhook от Робокассы
-app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
-
-  // Проверьте подпись для подтверждения подлинности уведомления
-  const secretKey2 = process.env.ROBO_SECRET2;
-  const expectedSignature = crypto
-    .createHash("md5")
-    .update(`${OutSum}:${InvId}:${secretKey2}`)
-    .digest("hex");
-
-  if (SignatureValue !== expectedSignature) {
-    return res.status(400).send("Invalid signature");
-  }
-
-  // Обработка статуса платежа
-  const session = await Session.findOne({ paymentId: InvId });
-
-  if (session) {
-    // Обновите статус оплаты в базе данных
-    session.paymentStatus = "success";
-    await session.save();
-
-    // Отправьте сообщение пользователю через бота
-    await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
-  } else {
-    await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
-  }
-
-  res.status(200).send(`OK${InvId}`);
-});
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
@@ -115,7 +116,21 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save();
 
     // Отправьте ссылку на оплату с уникальным paymentId
-    await ctx.reply(`Оплатите по ссылке: ${generatePaymentLink(paymentId, 3)}`);
+    await ctx.reply(
+      `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`
+    );
+
+    // Отправьте данные в Airtable
+    await sendToAirtable(
+      session.name,
+      session.email,
+      session.phone,
+      ctx.from.id
+    );
+
+    // Очистите сессию после отправки данных в Airtable
+    session.step = "completed";
+    await session.save();
   } else if (action === "rubles" || action === "euros") {
     if (action === "rubles") {
       const paymentId = generateUniqueId();
@@ -124,7 +139,11 @@ bot.on("callback_query:data", async (ctx) => {
 
       // Отправьте ссылку на оплату
       await ctx.reply(
-        `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3)}`
+        `Оплатите по ссылке: ${generatePaymentLink(
+          paymentId,
+          3,
+          session.email
+        )}`
       );
     } else {
       await ctx.reply(messages.paymentLinkEuros);
@@ -212,9 +231,3 @@ bot.on("message:text", async (ctx) => {
 
 // Запуск бота с долгим опросом
 bot.start();
-
-// Настройка сервера для обработки запросов от Робокассы
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server is running on port ${PORT}`);
-});
