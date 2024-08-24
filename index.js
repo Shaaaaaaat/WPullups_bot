@@ -210,37 +210,11 @@ bot.on("message:text", async (ctx) => {
   await session.save();
 });
 
-// Установка вебхука
-const setWebhook = async () => {
-  try {
-    await bot.api.deleteWebhook(); // Удаляем старый вебхук, если был
-    await bot.api.setWebhook(`${process.env.WEBHOOK_URL}/webhook`); // Устанавливаем новый вебхук
-    console.log("Webhook set successfully");
-  } catch (error) {
-    console.error("Failed to set webhook:", error);
-  }
-};
+// Запуск бота с долгим опросом
+bot.start();
 
-// Запуск сервера
+// Настройка сервера для обработки запросов от Робокассы
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
-  setWebhook(); // Устанавливаем вебхук при запуске сервера
 });
-
-// Ловим ошибки бота
-bot.catch((err) => {
-  const ctx = err.ctx;
-  console.error(`Error while handling update ${ctx.update.update_id}:`);
-
-  const e = err.error;
-
-  if (e instanceof Error) {
-    console.error("Error in request:", e.message);
-  } else {
-    console.error("Unknown error:", e);
-  }
-});
-
-// Убедитесь, что не вызывается bot.start() и используйте вебхук
-// bot.start(); // Не вызывайте это, если используете вебхук
