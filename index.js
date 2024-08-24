@@ -205,6 +205,7 @@ bot.on("message:text", async (ctx) => {
             text: "Российской (оплата в рублях)",
             callback_data: "rubles",
           })
+          .row()
           .add({ text: "Зарубежной (оплата в евро)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
