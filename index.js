@@ -105,7 +105,16 @@ bot.on("callback_query:data", async (ctx) => {
     session.step = "awaiting_name";
     await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "info") {
-    await ctx.reply(messages.webinarInfo);
+    await ctx.reply(messages.webinarInfo, {
+      reply_markup: new InlineKeyboard().add({
+        text: "Записаться на вебинар",
+        callback_data: "register_from_info",
+      }),
+    });
+  } else if (action === "register_from_info") {
+    await ctx.reply(messages.enterName);
+    session.step = "awaiting_name";
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "edit_info") {
     await ctx.reply(messages.editChoice, {
       reply_markup: new InlineKeyboard()
@@ -119,14 +128,8 @@ bot.on("callback_query:data", async (ctx) => {
     if (session.step === "awaiting_confirmation") {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({
-            text: "Российская карта (₽)",
-            callback_data: "rubles",
-          })
-          .add({
-            text: "Зарубежная карта (€)",
-            callback_data: "euros",
-          }),
+          .add({ text: "Российская карта (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная карта (€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save(); // Сохранение сессии после изменения шага
@@ -209,14 +212,8 @@ bot.on("message:text", async (ctx) => {
     if (ctx.message.text === "Все верно") {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({
-            text: "Российская карта (₽)",
-            callback_data: "rubles",
-          })
-          .add({
-            text: "Зарубежная карта (€)",
-            callback_data: "euros",
-          }),
+          .add({ text: "Российская карта (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная карта (€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save(); // Сохранение сессии после изменения шага
