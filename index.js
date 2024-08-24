@@ -103,6 +103,7 @@ bot.on("callback_query:data", async (ctx) => {
   if (action === "register") {
     await ctx.reply(messages.enterName);
     session.step = "awaiting_name";
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "info") {
     await ctx.reply(messages.webinarInfo);
   } else if (action === "edit_info") {
@@ -113,6 +114,7 @@ bot.on("callback_query:data", async (ctx) => {
         .add({ text: "E-mail", callback_data: "edit_email" }),
     });
     session.step = "awaiting_edit";
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "confirm_payment") {
     if (session.step === "awaiting_confirmation") {
       await ctx.reply("Выберите тип карты для оплаты:", {
@@ -127,12 +129,12 @@ bot.on("callback_query:data", async (ctx) => {
           }),
       });
       session.step = "awaiting_payment_type";
-      await session.save();
+      await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
-    await session.save();
+    await session.save(); // Сохранение сессии после генерации paymentId
 
     const paymentLink = generatePaymentLink(paymentId, 3, session.email);
 
@@ -153,7 +155,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     // Очистите сессию после отправки данных в Airtable
     session.step = "completed";
-    await session.save();
+    await session.save(); // Сохранение сессии после завершения
   } else if (action.startsWith("edit_")) {
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
@@ -164,7 +166,7 @@ bot.on("callback_query:data", async (ctx) => {
         }`
       ]
     );
-    await session.save();
+    await session.save(); // Сохранение сессии после изменения шага
   }
 });
 
@@ -176,12 +178,14 @@ bot.on("message:text", async (ctx) => {
     session.name = ctx.message.text;
     await ctx.reply(messages.enterPhone);
     session.step = "awaiting_phone";
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (session.step === "awaiting_phone") {
     const phone = ctx.message.text;
     if (/^\+\d+$/.test(phone)) {
       session.phone = phone;
       await ctx.reply(messages.enterEmail);
       session.step = "awaiting_email";
+      await session.save(); // Сохранение сессии после изменения шага
     } else {
       await ctx.reply(messages.invalidPhone);
     }
@@ -200,6 +204,7 @@ bot.on("message:text", async (ctx) => {
     });
 
     session.step = "awaiting_confirmation";
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (session.step === "awaiting_confirmation") {
     if (ctx.message.text === "Все верно") {
       await ctx.reply("Выберите тип карты для оплаты:", {
@@ -214,6 +219,7 @@ bot.on("message:text", async (ctx) => {
           }),
       });
       session.step = "awaiting_payment_type";
+      await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
@@ -244,7 +250,7 @@ bot.on("message:text", async (ctx) => {
     });
 
     session.step = "awaiting_confirmation";
-    await session.save();
+    await session.save(); // Сохранение сессии после изменения шага
   }
 });
 
