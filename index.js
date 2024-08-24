@@ -114,14 +114,19 @@ bot.on("callback_query:data", async (ctx) => {
     });
     session.step = "awaiting_edit";
   } else if (action === "confirm_payment") {
+    // Здесь ничего не изменяем, это будет обрабатываться в text message handler
+  } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
     await session.save();
 
     const paymentLink = generatePaymentLink(paymentId, 3, session.email);
 
-    // Отправьте ссылку на оплату с уникальным paymentId
-    await ctx.reply(`Оплатите по ссылке: ${paymentLink}`);
+    if (action === "rubles") {
+      await ctx.reply(`Оплатите по ссылке: ${paymentLink}`);
+    } else {
+      await ctx.reply(messages.paymentLinkEuros);
+    }
 
     // Отправьте данные в Airtable с inv_id
     await sendToAirtable(
@@ -135,23 +140,6 @@ bot.on("callback_query:data", async (ctx) => {
     // Очистите сессию после отправки данных в Airtable
     session.step = "completed";
     await session.save();
-  } else if (action === "rubles" || action === "euros") {
-    if (action === "rubles") {
-      const paymentId = generateUniqueId();
-      session.paymentId = paymentId;
-      await session.save();
-
-      // Отправьте ссылку на оплату
-      await ctx.reply(
-        `Оплатите по ссылке: ${generatePaymentLink(
-          paymentId,
-          3,
-          session.email
-        )}`
-      );
-    } else {
-      await ctx.reply(messages.paymentLinkEuros);
-    }
   } else if (action.startsWith("edit_")) {
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
@@ -199,6 +187,18 @@ bot.on("message:text", async (ctx) => {
     });
 
     session.step = "awaiting_confirmation";
+  } else if (session.step === "awaiting_confirmation") {
+    if (ctx.message.text === "Все верно") {
+      await ctx.reply("Какой картой хотите произвести оплату?", {
+        reply_markup: new InlineKeyboard()
+          .add({
+            text: "Российской (оплата в рублях)",
+            callback_data: "rubles",
+          })
+          .add({ text: "Зарубежной (оплата в евро)", callback_data: "euros" }),
+      });
+      session.step = "awaiting_payment_type";
+    }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
     if (field === "name") {
