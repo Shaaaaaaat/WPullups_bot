@@ -1,15 +1,12 @@
 require("dotenv").config();
 const { Bot, InlineKeyboard } = require("grammy");
-const connectDB = require("./database");
-const Session = require("./sessionModel");
-const fs = require("fs");
-const crypto = require("crypto");
 const express = require("express");
 const bodyParser = require("body-parser");
+const crypto = require("crypto");
+const fs = require("fs");
 const axios = require("axios");
-
-// Извлечение переменных окружения для Airtable
-const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID } = process.env;
+const connectDB = require("./database");
+const Session = require("./sessionModel");
 
 // Создаем экземпляр бота
 const bot = new Bot(process.env.BOT_API_KEY); // Ваш API ключ от Telegram бота
@@ -27,115 +24,60 @@ const messages = loadMessages();
 function generateUniqueId() {
   const maxId = 2147483647; // Максимально допустимое значение
   const minId = 1; // Минимально допустимое значение
-
-  // Используем Date.now() и ограничиваем его до максимального значения
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
 // Функция для генерации ссылки на оплату
 function generatePaymentLink(paymentId, amount, email) {
+  const shopId = process.env.ROBO_ID; // Логин вашего магазина в Робокассе
+  const secretKey1 = process.env.ROBO_SECRET1; // Secret Key 1 для формирования подписи
+
   const signature = crypto
     .createHash("md5")
-    .update(
-      `${process.env.ROBO_ID}:${amount}:${paymentId}:${process.env.ROBO_SECRET1}`
-    )
+    .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${
-    process.env.ROBO_ID
-  }&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0&Email=${encodeURIComponent(
-    email
-  )}`;
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
+}
+
+// Функция для отправки данных в Airtable
+async function sendToAirtable(name, email, phone, tgId) {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const tableId = process.env.AIRTABLE_TABLE_ID;
+
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const data = {
+    fields: {
+      FIO: name,
+      email: email,
+      Phone: phone,
+      tgId: tgId,
+      Tag: "Webinar",
+    },
+  };
+
+  try {
+    await axios.post(url, data, { headers });
+  } catch (error) {
+    console.error(
+      "Error sending data to Airtable:",
+      error.response ? error.response.data : error.message
+    );
+  }
 }
 
 // Создаем и настраиваем Express-приложение
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Функция для создания записи в Airtable
-async function createRecordInAirtable(fields) {
-  try {
-    const response = await axios.post(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`,
-      { fields },
-      {
-        headers: {
-          Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data.id; // Возвращаем ID созданной записи
-  } catch (error) {
-    console.error(
-      "Error creating record in Airtable:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-}
-
-// Функция для обновления записи в Airtable
-async function updateRecordInAirtable(recordId, fields) {
-  try {
-    await axios.patch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}/${recordId}`,
-      { fields },
-      {
-        headers: {
-          Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } catch (error) {
-    console.error(
-      "Error updating record in Airtable:",
-      error.response ? error.response.data : error.message
-    );
-    throw error;
-  }
-}
-
-app.post("/webhook/robokassa", async (req, res) => {
-  const { InvId, OutSum, SignatureValue, Email } = req.body;
-
-  // Проверьте подпись для подтверждения подлинности уведомления
-  const expectedSignature = crypto
-    .createHash("md5")
-    .update(`${OutSum}:${InvId}:${process.env.ROBO_SECRET2}`)
-    .digest("hex");
-
-  if (SignatureValue !== expectedSignature) {
-    return res.status(400).send("Invalid signature");
-  }
-
-  // Найдите сессию в базе данных по InvId
-  const session = await Session.findOne({ paymentId: InvId });
-
-  if (session) {
-    // Обновите статус оплаты в базе данных
-    session.paymentStatus = "success";
-    session.email = Email; // Обновите email в базе данных
-    await session.save();
-
-    // Обновите данные в Airtable
-    await updateRecordInAirtable(session.airtableRecordId, {
-      "Payment Status": "Paid", // Допустим, у вас есть поле для статуса оплаты
-    });
-
-    // Отправьте сообщение пользователю через бота
-    await bot.api.sendMessage(session.userId, "Оплата прошла успешно");
-  } else {
-    await bot.api.sendMessage(session.userId, "Не удалось подтвердить оплату");
-  }
-
-  res.status(200).send("OK");
-});
+app.use(bodyParser.json()); // Используем JSON для обработки запросов от Telegram и Робокассы
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
-  // Сохраняем данные пользователя в базе данных
   await Session.findOneAndUpdate(
     { userId: ctx.from.id.toString() },
     { userId: ctx.from.id.toString(), step: "start" },
@@ -169,23 +111,33 @@ bot.on("callback_query:data", async (ctx) => {
     });
     session.step = "awaiting_edit";
   } else if (action === "confirm_payment") {
-    // Создайте уникальный paymentId для этой транзакции
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
     await session.save();
 
-    // Отправьте ссылку на оплату с уникальным paymentId и email
+    // Отправьте ссылку на оплату с уникальным paymentId
     await ctx.reply(
       `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`
     );
+
+    // Отправьте данные в Airtable
+    await sendToAirtable(
+      session.name,
+      session.email,
+      session.phone,
+      ctx.from.id
+    );
+
+    // Очистите сессию после отправки данных в Airtable
+    session.step = "completed";
+    await session.save();
   } else if (action === "rubles" || action === "euros") {
     if (action === "rubles") {
-      // Создайте уникальный paymentId для этой транзакции
       const paymentId = generateUniqueId();
       session.paymentId = paymentId;
       await session.save();
 
-      // Отправьте ссылку на оплату с уникальным paymentId и email
+      // Отправьте ссылку на оплату
       await ctx.reply(
         `Оплатите по ссылке: ${generatePaymentLink(
           paymentId,
@@ -197,7 +149,6 @@ bot.on("callback_query:data", async (ctx) => {
       await ctx.reply(messages.paymentLinkEuros);
     }
   } else if (action.startsWith("edit_")) {
-    // Начинаем редактирование выбранного поля
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
       messages[
@@ -231,31 +182,52 @@ bot.on("message:text", async (ctx) => {
     }
   } else if (session.step === "awaiting_email") {
     session.email = ctx.message.text;
+    const confirmationMessage = messages.confirmation
+      .replace("{{ $ФИ }}", session.name)
+      .replace("{{ $Tel }}", session.phone)
+      .replace("{{ $email }}", session.email);
 
-    // Создаем запись в Airtable
-    const recordId = await createRecordInAirtable({
-      FIO: session.name,
-      Phone: session.phone,
-      Email: session.email,
-      PaymentStatus: "Pending", // Пример поля для статуса оплаты
+    await ctx.reply(confirmationMessage, {
+      reply_markup: new InlineKeyboard()
+        .add({ text: "Все верно", callback_data: "confirm_payment" })
+        .row()
+        .add({ text: "Изменить", callback_data: "edit_info" }),
     });
-    session.airtableRecordId = recordId;
 
-    // Сохраняем изменения
-    await session.save();
-
-    await ctx.reply(messages.registrationComplete);
+    session.step = "awaiting_confirmation";
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
-    session[field] = ctx.message.text;
-    await updateRecordInAirtable(session.airtableRecordId, {
-      [field]: ctx.message.text,
+    if (field === "name") {
+      session.name = ctx.message.text;
+    } else if (field === "phone") {
+      const phone = ctx.message.text;
+      if (/^\+\d+$/.test(phone)) {
+        session.phone = phone;
+      } else {
+        await ctx.reply(messages.invalidPhone);
+        return;
+      }
+    } else if (field === "email") {
+      session.email = ctx.message.text;
+    }
+
+    const confirmationMessage = messages.confirmation
+      .replace("{{ $ФИ }}", session.name)
+      .replace("{{ $Tel }}", session.phone)
+      .replace("{{ $email }}", session.email);
+
+    await ctx.reply(confirmationMessage, {
+      reply_markup: new InlineKeyboard()
+        .add({ text: "Все верно", callback_data: "confirm_payment" })
+        .row()
+        .add({ text: "Изменить", callback_data: "edit_info" }),
     });
 
-    session.step = "start"; // Возвращаемся к начальному шагу
-    await ctx.reply(messages.editComplete);
+    session.step = "awaiting_confirmation";
   }
+
+  await session.save();
 });
 
-// Запуск бота
+// Запуск бота с долгим опросом
 bot.start();
