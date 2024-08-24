@@ -63,10 +63,40 @@ async function sendToAirtable(name, email, phone, tgId) {
   };
 
   try {
-    await axios.post(url, data, { headers });
+    const response = await axios.post(url, data, { headers });
+    return response.data.id; // Вернуть ID созданной записи для последующего обновления
   } catch (error) {
     console.error(
       "Error sending data to Airtable:",
+      error.response ? error.response.data : error.message
+    );
+    return null;
+  }
+}
+
+// Функция для обновления записи в Airtable
+async function updateAirtableRecord(recordId, paymentId) {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const tableId = process.env.AIRTABLE_TABLE_ID;
+
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const data = {
+    fields: {
+      InvId: paymentId,
+    },
+  };
+
+  try {
+    await axios.patch(url, data, { headers });
+  } catch (error) {
+    console.error(
+      "Error updating data in Airtable:",
       error.response ? error.response.data : error.message
     );
   }
@@ -111,33 +141,31 @@ bot.on("callback_query:data", async (ctx) => {
     });
     session.step = "awaiting_edit";
   } else if (action === "confirm_payment") {
+    // Переходим к выбору типа карты для оплаты
+    await ctx.reply(messages.selectPaymentMethod, {
+      reply_markup: new InlineKeyboard()
+        .add({ text: "Российская карта", callback_data: "pay_rub" })
+        .add({ text: "Зарубежная карта", callback_data: "pay_eur" }),
+    });
+    session.step = "awaiting_payment_method";
+  } else if (action === "pay_rub") {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
     await session.save();
 
-    // Отправьте ссылку на оплату с уникальным paymentId
-    await ctx.reply(
-      `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`
-    );
-
-    // Отправьте данные в Airtable
-    await sendToAirtable(
+    // Отправьте данные в Airtable и получите recordId
+    const recordId = await sendToAirtable(
       session.name,
       session.email,
       session.phone,
       ctx.from.id
     );
 
-    // Очистите сессию после отправки данных в Airtable
-    session.step = "completed";
-    await session.save();
-  } else if (action === "rubles" || action === "euros") {
-    if (action === "rubles") {
-      const paymentId = generateUniqueId();
-      session.paymentId = paymentId;
-      await session.save();
+    if (recordId) {
+      // Обновите запись в Airtable с InvId
+      await updateAirtableRecord(recordId, paymentId);
 
-      // Отправьте ссылку на оплату
+      // Отправьте ссылку на оплату с уникальным paymentId
       await ctx.reply(
         `Оплатите по ссылке: ${generatePaymentLink(
           paymentId,
@@ -146,8 +174,13 @@ bot.on("callback_query:data", async (ctx) => {
         )}`
       );
     } else {
-      await ctx.reply(messages.paymentLinkEuros);
+      await ctx.reply(messages.airtableError);
     }
+
+    session.step = "completed"; // Завершение процесса
+  } else if (action === "pay_eur") {
+    await ctx.reply(messages.paymentLinkEuros);
+    session.step = "completed"; // Завершение процесса
   } else if (action.startsWith("edit_")) {
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
@@ -225,9 +258,7 @@ bot.on("message:text", async (ctx) => {
 
     session.step = "awaiting_confirmation";
   }
-
-  await session.save();
 });
 
-// Запуск бота с долгим опросом
+// Запускаем бота
 bot.start();
