@@ -145,83 +145,11 @@ bot.on("callback_query:data", async (ctx) => {
   await session.save();
 });
 
-// Обработчик для ввода данных
-bot.on("message:text", async (ctx) => {
-  const session = await Session.findOne({ userId: ctx.from.id.toString() });
-
-  if (session.step === "awaiting_name") {
-    session.name = ctx.message.text;
-    await ctx.reply(messages.enterPhone);
-    session.step = "awaiting_phone";
-  } else if (session.step === "awaiting_phone") {
-    const phone = ctx.message.text;
-    if (/^\+\d+$/.test(phone)) {
-      session.phone = phone;
-      await ctx.reply(messages.enterEmail);
-      session.step = "awaiting_email";
-    } else {
-      await ctx.reply(messages.invalidPhone);
-    }
-  } else if (session.step === "awaiting_email") {
-    session.email = ctx.message.text;
-    const confirmationMessage = messages.confirmation
-      .replace("{{ $ФИ }}", session.name)
-      .replace("{{ $Tel }}", session.phone)
-      .replace("{{ $email }}", session.email);
-
-    await ctx.reply(confirmationMessage, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
-        .add({ text: "Изменить", callback_data: "edit_info" }),
-    });
-
-    session.step = "awaiting_confirmation";
-  } else if (session.step.startsWith("awaiting_edit_")) {
-    const field = session.step.replace("awaiting_edit_", "");
-    if (field === "name") {
-      session.name = ctx.message.text;
-    } else if (field === "phone") {
-      const phone = ctx.message.text;
-      if (/^\+\d+$/.test(phone)) {
-        session.phone = phone;
-      } else {
-        await ctx.reply(messages.invalidPhone);
-        return;
-      }
-    } else if (field === "email") {
-      session.email = ctx.message.text;
-    }
-
-    const confirmationMessage = messages.confirmation
-      .replace("{{ $ФИ }}", session.name)
-      .replace("{{ $Tel }}", session.phone)
-      .replace("{{ $email }}", session.email);
-
-    await ctx.reply(confirmationMessage, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
-        .add({ text: "Изменить", callback_data: "edit_info" }),
-    });
-
-    session.step = "awaiting_confirmation";
-  }
-
-  await session.save();
-});
-
-// Проверка и установка вебхука
-const setupWebhook = async () => {
+// Установка вебхука
+const setWebhook = async () => {
   try {
-    // Получение информации о текущем вебхуке
-    const webhookInfo = await bot.api.getWebhookInfo();
-
-    if (webhookInfo.url) {
-      console.log("Existing webhook found, deleting it...");
-      await bot.api.deleteWebhook();
-      console.log("Previous webhook deleted");
-    }
+    // Удаление старого вебхука
+    await bot.api.deleteWebhook();
 
     // Установка нового вебхука
     await bot.api.setWebhook(
@@ -238,7 +166,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
   // Установка вебхука после запуска сервера
-  setupWebhook();
+  setWebhook();
 });
 
 // Ловим ошибки бота
@@ -255,5 +183,5 @@ bot.catch((err) => {
   }
 });
 
-// Запуск бота
-bot.start();
+// Убедитесь, что не вызывается bot.start() и используйте вебхук
+// bot.start(); // Не вызывайте это, если используете вебхук
