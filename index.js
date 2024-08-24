@@ -41,7 +41,7 @@ function generatePaymentLink(paymentId, amount, email) {
 }
 
 // Функция для отправки данных в Airtable
-async function sendToAirtable(name, email, phone, tgId) {
+async function sendToAirtable(name, email, phone, tgId, invId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
@@ -59,6 +59,7 @@ async function sendToAirtable(name, email, phone, tgId) {
       Phone: phone,
       tgId: tgId,
       Tag: "Webinar",
+      inv_id: invId, // Добавляем inv_id
     },
   };
 
@@ -115,17 +116,18 @@ bot.on("callback_query:data", async (ctx) => {
     session.paymentId = paymentId;
     await session.save();
 
-    // Отправьте ссылку на оплату с уникальным paymentId
-    await ctx.reply(
-      `Оплатите по ссылке: ${generatePaymentLink(paymentId, 3, session.email)}`
-    );
+    const paymentLink = generatePaymentLink(paymentId, 3, session.email);
 
-    // Отправьте данные в Airtable
+    // Отправьте ссылку на оплату с уникальным paymentId
+    await ctx.reply(`Оплатите по ссылке: ${paymentLink}`);
+
+    // Отправьте данные в Airtable с inv_id
     await sendToAirtable(
       session.name,
       session.email,
       session.phone,
-      ctx.from.id
+      ctx.from.id,
+      paymentId // Передаем inv_id
     );
 
     // Очистите сессию после отправки данных в Airtable
