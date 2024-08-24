@@ -90,7 +90,6 @@ bot.command("start", async (ctx) => {
   ctx.reply(messages.start, {
     reply_markup: new InlineKeyboard()
       .add({ text: "Записаться на вебинар", callback_data: "register" })
-      .row()
       .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" }),
   });
 });
@@ -121,6 +120,7 @@ bot.on("callback_query:data", async (ctx) => {
             text: "Российской (оплата в рублях)",
             callback_data: "rubles",
           })
+          .row() // Перенос кнопки на новую строку
           .add({ text: "Зарубежной (оплата в евро)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
@@ -192,7 +192,7 @@ bot.on("message:text", async (ctx) => {
     await ctx.reply(confirmationMessage, {
       reply_markup: new InlineKeyboard()
         .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
+        .row() // Перенос кнопки на новую строку
         .add({ text: "Изменить", callback_data: "edit_info" }),
     });
 
@@ -205,6 +205,7 @@ bot.on("message:text", async (ctx) => {
             text: "Российской (оплата в рублях)",
             callback_data: "rubles",
           })
+          .row() // Перенос кнопки на новую строку
           .add({ text: "Зарубежной (оплата в евро)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
@@ -233,13 +234,14 @@ bot.on("message:text", async (ctx) => {
     await ctx.reply(confirmationMessage, {
       reply_markup: new InlineKeyboard()
         .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
+        .row() // Перенос кнопки на новую строку
         .add({ text: "Изменить", callback_data: "edit_info" }),
     });
 
     session.step = "awaiting_confirmation";
-    await session.save();
   }
+
+  await session.save();
 });
 
 // Запуск бота с долгим опросом
