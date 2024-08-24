@@ -37,7 +37,9 @@ function generatePaymentLink(paymentId, amount, email) {
     .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
+    email
+  )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
 // Функция для отправки данных в Airtable
