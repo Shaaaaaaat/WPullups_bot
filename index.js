@@ -1,11 +1,11 @@
 require("dotenv").config();
 const { Bot, InlineKeyboard } = require("grammy");
-const connectDB = require("./database");
-const Session = require("./sessionModel");
-const fs = require("fs");
-const crypto = require("crypto");
 const express = require("express");
 const bodyParser = require("body-parser");
+const crypto = require("crypto");
+const fs = require("fs");
+const connectDB = require("./database");
+const Session = require("./sessionModel");
 
 // Создаем экземпляр бота
 const bot = new Bot(process.env.BOT_API_KEY); // Ваш API ключ от Telegram бота
@@ -23,7 +23,6 @@ const messages = loadMessages();
 function generateUniqueId() {
   const maxId = 2147483647; // Максимально допустимое значение
   const minId = 1; // Минимально допустимое значение
-
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
@@ -42,9 +41,9 @@ function generatePaymentLink(paymentId, amount, email) {
 
 // Создаем и настраиваем Express-приложение
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json()); // Используем JSON для обработки запросов от Telegram и Робокассы
 
-// Обработчик для webhook
+// Обработчик для webhook от Робокассы
 app.post("/webhook/robokassa", async (req, res) => {
   const { InvId, OutSum, SignatureValue, Email, PaymentStatus } = req.body;
 
@@ -145,16 +144,77 @@ bot.on("callback_query:data", async (ctx) => {
   await session.save();
 });
 
+// Обработчик для ввода данных
+bot.on("message:text", async (ctx) => {
+  const session = await Session.findOne({ userId: ctx.from.id.toString() });
+
+  if (session.step === "awaiting_name") {
+    session.name = ctx.message.text;
+    await ctx.reply(messages.enterPhone);
+    session.step = "awaiting_phone";
+  } else if (session.step === "awaiting_phone") {
+    const phone = ctx.message.text;
+    if (/^\+\d+$/.test(phone)) {
+      session.phone = phone;
+      await ctx.reply(messages.enterEmail);
+      session.step = "awaiting_email";
+    } else {
+      await ctx.reply(messages.invalidPhone);
+    }
+  } else if (session.step === "awaiting_email") {
+    session.email = ctx.message.text;
+    const confirmationMessage = messages.confirmation
+      .replace("{{ $ФИ }}", session.name)
+      .replace("{{ $Tel }}", session.phone)
+      .replace("{{ $email }}", session.email);
+
+    await ctx.reply(confirmationMessage, {
+      reply_markup: new InlineKeyboard()
+        .add({ text: "Все верно", callback_data: "confirm_payment" })
+        .row()
+        .add({ text: "Изменить", callback_data: "edit_info" }),
+    });
+
+    session.step = "awaiting_confirmation";
+  } else if (session.step.startsWith("awaiting_edit_")) {
+    const field = session.step.replace("awaiting_edit_", "");
+    if (field === "name") {
+      session.name = ctx.message.text;
+    } else if (field === "phone") {
+      const phone = ctx.message.text;
+      if (/^\+\d+$/.test(phone)) {
+        session.phone = phone;
+      } else {
+        await ctx.reply(messages.invalidPhone);
+        return;
+      }
+    } else if (field === "email") {
+      session.email = ctx.message.text;
+    }
+
+    const confirmationMessage = messages.confirmation
+      .replace("{{ $ФИ }}", session.name)
+      .replace("{{ $Tel }}", session.phone)
+      .replace("{{ $email }}", session.email);
+
+    await ctx.reply(confirmationMessage, {
+      reply_markup: new InlineKeyboard()
+        .add({ text: "Все верно", callback_data: "confirm_payment" })
+        .row()
+        .add({ text: "Изменить", callback_data: "edit_info" }),
+    });
+
+    session.step = "awaiting_confirmation";
+  }
+
+  await session.save();
+});
+
 // Установка вебхука
 const setWebhook = async () => {
   try {
-    // Удаление старого вебхука
-    await bot.api.deleteWebhook();
-
-    // Установка нового вебхука
-    await bot.api.setWebhook(
-      process.env.WEBHOOK_URL || `https://your-webhook-url`
-    );
+    await bot.api.deleteWebhook(); // Удаляем старый вебхук, если был
+    await bot.api.setWebhook(`${process.env.WEBHOOK_URL}/webhook`); // Устанавливаем новый вебхук
     console.log("Webhook set successfully");
   } catch (error) {
     console.error("Failed to set webhook:", error);
@@ -165,8 +225,7 @@ const setWebhook = async () => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
-  // Установка вебхука после запуска сервера
-  setWebhook();
+  setWebhook(); // Устанавливаем вебхук при запуске сервера
 });
 
 // Ловим ошибки бота
