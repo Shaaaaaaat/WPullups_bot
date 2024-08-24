@@ -120,11 +120,11 @@ bot.on("callback_query:data", async (ctx) => {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
           .add({
-            text: "Российская карта (оплата в рублях)",
+            text: "Российская карта (₽)",
             callback_data: "rubles",
           })
           .add({
-            text: "Зарубежная карта (оплата в евро)",
+            text: "Зарубежная карта (€)",
             callback_data: "euros",
           }),
       });
@@ -210,11 +210,11 @@ bot.on("message:text", async (ctx) => {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
           .add({
-            text: "Российская карта (оплата в рублях)",
+            text: "Российская карта (₽)",
             callback_data: "rubles",
           })
           .add({
-            text: "Зарубежная карта (оплата в евро)",
+            text: "Зарубежная карта (€)",
             callback_data: "euros",
           }),
       });
