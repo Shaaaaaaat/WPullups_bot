@@ -31,7 +31,7 @@ function generateUniqueId() {
 // Функция для создания объекта Price в Stripe
 async function createPrice() {
   const price = await stripe.prices.create({
-    unit_amount: 100, // 9 евро в центах
+    unit_amount: 100, // 1 евро в центах
     currency: "eur",
     product_data: {
       name: "Webinar Registration",
@@ -50,7 +50,7 @@ async function createPaymentLink(priceId) {
       },
     ],
   });
-  return paymentLink.url;
+  return { url: paymentLink.url, priceId };
 }
 
 // Функция для генерации ссылки на оплату Робокассы
@@ -175,33 +175,43 @@ bot.on("callback_query:data", async (ctx) => {
           url: paymentLink,
         }),
       });
+
+      await sendToAirtable(
+        session.name,
+        session.email,
+        session.phone,
+        ctx.from.id,
+        paymentId
+      );
+
+      session.step = "completed";
+      await session.save();
     } else if (action === "euros") {
       try {
-        const priceId = await createPrice();
-        paymentLink = await createPaymentLink(priceId);
+        const { url, priceId } = await createPaymentLink();
         await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
           reply_markup: new InlineKeyboard().add({
             text: "Оплатить в €",
-            url: paymentLink,
+            url: url,
           }),
         });
+
+        await sendToAirtable(
+          session.name,
+          session.email,
+          session.phone,
+          ctx.from.id,
+          priceId // Используем priceId как invId для евро
+        );
+
+        session.step = "completed";
+        await session.save();
       } catch (error) {
         await ctx.reply(
           "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
         );
       }
     }
-
-    await sendToAirtable(
-      session.name,
-      session.email,
-      session.phone,
-      ctx.from.id,
-      paymentId
-    );
-
-    session.step = "completed";
-    await session.save();
   } else if (action.startsWith("edit_")) {
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(

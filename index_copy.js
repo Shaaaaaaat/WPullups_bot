@@ -31,7 +31,7 @@ function generateUniqueId() {
 // Функция для создания объекта Price в Stripe
 async function createPrice() {
   const price = await stripe.prices.create({
-    unit_amount: 900, // 9 евро в центах
+    unit_amount: 100, // 9 евро в центах
     currency: "eur",
     product_data: {
       name: "Webinar Registration",
