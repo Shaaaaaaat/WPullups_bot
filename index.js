@@ -69,7 +69,7 @@ function generatePaymentLinkRobokassa(paymentId, amount, email) {
 }
 
 // Функция для отправки данных в Airtable
-async function sendToAirtable(name, email, phone, tgId, paymentIdOrPriceId) {
+async function sendToAirtable(name, email, phone, tgId, invId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
@@ -87,7 +87,7 @@ async function sendToAirtable(name, email, phone, tgId, paymentIdOrPriceId) {
       Phone: phone,
       tgId: tgId,
       Tag: "Webinar",
-      inv_id: paymentIdOrPriceId, // Используем paymentIdOrPriceId
+      inv_id: invId,
     },
   };
 
@@ -126,98 +126,118 @@ bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
-  if (action === "register") {
-    await ctx.reply(messages.enterName);
-    session.step = "awaiting_name";
-    await session.save();
-  } else if (action === "info") {
-    await ctx.reply(messages.webinarInfo, {
-      reply_markup: new InlineKeyboard().add({
-        text: "Записаться на вебинар",
-        callback_data: "register_from_info",
-      }),
-    });
-  } else if (action === "register_from_info") {
-    await ctx.reply(messages.enterName);
-    session.step = "awaiting_name";
-    await session.save();
-  } else if (action === "edit_info") {
-    await ctx.reply(messages.editChoice, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "ФИ", callback_data: "edit_name" })
-        .add({ text: "Телефон", callback_data: "edit_phone" })
-        .add({ text: "E-mail", callback_data: "edit_email" }),
-    });
-    session.step = "awaiting_edit";
-    await session.save();
-  } else if (action === "confirm_payment") {
-    if (session.step === "awaiting_confirmation") {
-      await ctx.reply("Выберите тип карты для оплаты:", {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
-      });
-      session.step = "awaiting_payment_type";
+  if (!session) {
+    await ctx.reply(
+      "Произошла ошибка. Пожалуйста, начните регистрацию заново."
+    );
+    return;
+  }
+
+  switch (action) {
+    case "register":
+    case "register_from_info":
+      await ctx.reply(messages.enterName);
+      session.step = "awaiting_name";
       await session.save();
-    }
-  } else if (action === "rubles" || action === "euros") {
-    let paymentIdOrPriceId = generateUniqueId(); // Генерируем уникальный ID для Робокассы
-    session.paymentId = paymentIdOrPriceId;
-    await session.save();
+      break;
 
-    let paymentLink;
-
-    if (action === "rubles") {
-      paymentLink = generatePaymentLinkRobokassa(
-        paymentIdOrPriceId,
-        3,
-        session.email
-      );
-      await ctx.reply("Нажмите на кнопку ниже для оплаты в рублях:", {
+    case "info":
+      await ctx.reply(messages.webinarInfo, {
         reply_markup: new InlineKeyboard().add({
-          text: "Оплатить в ₽",
-          url: paymentLink,
+          text: "Записаться на вебинар",
+          callback_data: "register_from_info",
         }),
       });
-    } else if (action === "euros") {
-      try {
-        const priceId = await createPrice();
-        paymentLink = await createPaymentLink(priceId);
-        paymentIdOrPriceId = priceId; // Используем priceId вместо paymentId
-        await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
+      break;
+
+    case "edit_info":
+      await ctx.reply(messages.editChoice, {
+        reply_markup: new InlineKeyboard()
+          .add({ text: "ФИ", callback_data: "edit_name" })
+          .add({ text: "Телефон", callback_data: "edit_phone" })
+          .add({ text: "E-mail", callback_data: "edit_email" }),
+      });
+      session.step = "awaiting_edit";
+      await session.save();
+      break;
+
+    case "confirm_payment":
+      if (session.step === "awaiting_confirmation") {
+        await ctx.reply("Выберите тип карты для оплаты:", {
+          reply_markup: new InlineKeyboard()
+            .add({ text: "Российская (₽)", callback_data: "rubles" })
+            .add({ text: "Зарубежная (€)", callback_data: "euros" }),
+        });
+        session.step = "awaiting_payment_type";
+        await session.save();
+      }
+      break;
+
+    case "rubles":
+    case "euros":
+      const paymentId = generateUniqueId();
+      session.paymentId = paymentId;
+      await session.save();
+
+      let paymentLink;
+
+      if (action === "rubles") {
+        paymentLink = generatePaymentLinkRobokassa(paymentId, 3, session.email);
+        await ctx.reply("Нажмите на кнопку ниже для оплаты в рублях:", {
           reply_markup: new InlineKeyboard().add({
-            text: "Оплатить в €",
+            text: "Оплатить в ₽",
             url: paymentLink,
           }),
         });
-      } catch (error) {
-        await ctx.reply(
-          "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
-        );
+      } else if (action === "euros") {
+        try {
+          const priceId = await createPrice();
+          paymentLink = await createPaymentLink(priceId);
+          await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
+            reply_markup: new InlineKeyboard().add({
+              text: "Оплатить в €",
+              url: paymentLink,
+            }),
+          });
+          session.paymentId = priceId; // Сохраняем priceId для евро
+        } catch (error) {
+          await ctx.reply(
+            "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
+          );
+          return;
+        }
       }
-    }
 
-    await sendToAirtable(
-      session.name,
-      session.email,
-      session.phone,
-      ctx.from.id,
-      paymentIdOrPriceId // Передаем правильный идентификатор
-    );
+      await sendToAirtable(
+        session.name,
+        session.email,
+        session.phone,
+        ctx.from.id,
+        session.paymentId // Используем paymentId или priceId в зависимости от типа оплаты
+      );
 
-    session.step = "completed";
-    await session.save();
-  } else if (action.startsWith("edit_")) {
-    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
-    await ctx.reply(
-      messages[
-        `edit${
-          action.replace("edit_", "").charAt(0).toUpperCase() +
-          action.replace("edit_", "").slice(1)
-        }`
-      ]
-    );
-    await session.save();
+      session.step = "completed";
+      await session.save();
+      break;
+
+    case "edit_name":
+    case "edit_phone":
+    case "edit_email":
+      session.step = `awaiting_edit_${action.replace("edit_", "")}`;
+      await ctx.reply(
+        messages[
+          `edit${
+            action.replace("edit_", "").charAt(0).toUpperCase() +
+            action.replace("edit_", "").slice(1)
+          }`
+        ]
+      );
+      await session.save();
+      break;
+
+    default:
+      await ctx.reply("Неизвестное действие.");
+      break;
   }
 });
 
@@ -225,53 +245,77 @@ bot.on("callback_query:data", async (ctx) => {
 bot.on("message:text", async (ctx) => {
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
-  if (session.step === "awaiting_name") {
-    session.name = ctx.message.text;
-    await ctx.reply(messages.enterPhone);
-    session.step = "awaiting_phone";
-    await session.save();
-  } else if (session.step === "awaiting_phone") {
-    const phone = ctx.message.text;
-    if (/^\+\d+$/.test(phone)) {
-      session.phone = phone;
-      await ctx.reply(messages.enterEmail);
-      session.step = "awaiting_email";
-      await session.save();
-    } else {
-      await ctx.reply(messages.invalidPhone);
-    }
-  } else if (session.step === "awaiting_email") {
-    session.email = ctx.message.text;
-    const confirmationMessage = messages.confirmation
-      .replace("{{ $ФИ }}", session.name)
-      .replace("{{ $Tel }}", session.phone)
-      .replace("{{ $email }}", session.email);
-
-    await ctx.reply(confirmationMessage, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
-        .add({ text: "Редактировать", callback_data: "edit_info" }),
-    });
-    session.step = "awaiting_confirmation";
-    await session.save();
-  } else if (session.step.startsWith("awaiting_edit")) {
-    const editField = session.step.replace("awaiting_edit_", "");
-    session[editField] = ctx.message.text;
-    await ctx.reply(`Ваше ${editField} обновлено.`);
-    session.step = "awaiting_confirmation";
+  if (!session) {
     await ctx.reply(
-      messages.confirmation
+      "Произошла ошибка. Пожалуйста, начните регистрацию заново."
+    );
+    return;
+  }
+
+  switch (session.step) {
+    case "awaiting_name":
+      session.name = ctx.message.text;
+      await ctx.reply(messages.enterPhone);
+      session.step = "awaiting_phone";
+      await session.save();
+      break;
+
+    case "awaiting_phone":
+      const phone = ctx.message.text;
+      if (/^\+\d+$/.test(phone)) {
+        session.phone = phone;
+        await ctx.reply(messages.enterEmail);
+        session.step = "awaiting_email";
+        await session.save();
+      } else {
+        await ctx.reply(messages.invalidPhone);
+      }
+      break;
+
+    case "awaiting_email":
+      session.email = ctx.message.text;
+      const confirmationMessage = messages.confirmation
         .replace("{{ $ФИ }}", session.name)
         .replace("{{ $Tel }}", session.phone)
-        .replace("{{ $email }}", session.email),
-      {
+        .replace("{{ $email }}", session.email);
+
+      await ctx.reply(confirmationMessage, {
         reply_markup: new InlineKeyboard()
           .add({ text: "Все верно", callback_data: "confirm_payment" })
           .row()
           .add({ text: "Редактировать", callback_data: "edit_info" }),
-      }
-    );
+      });
+      session.step = "awaiting_confirmation";
+      await session.save();
+      break;
+
+    case "awaiting_edit_name":
+    case "awaiting_edit_phone":
+    case "awaiting_edit_email":
+      const editField = session.step.replace("awaiting_edit_", "");
+      session[editField] = ctx.message.text;
+      await ctx.reply(`Ваше ${editField} обновлено.`);
+      session.step = "awaiting_confirmation";
+      await ctx.reply(
+        messages.confirmation
+          .replace("{{ $ФИ }}", session.name)
+          .replace("{{ $Tel }}", session.phone)
+          .replace("{{ $email }}", session.email),
+        {
+          reply_markup: new InlineKeyboard()
+            .add({ text: "Все верно", callback_data: "confirm_payment" })
+            .row()
+            .add({ text: "Редактировать", callback_data: "edit_info" }),
+        }
+      );
+      await session.save();
+      break;
+
+    default:
+      await ctx.reply(
+        "Неизвестный шаг. Пожалуйста, начните регистрацию заново."
+      );
+      break;
   }
 });
 
