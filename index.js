@@ -31,7 +31,7 @@ function generateUniqueId() {
 // Функция для создания объекта Price в Stripe
 async function createPrice() {
   const price = await stripe.prices.create({
-    unit_amount: 100, // 1 евро в центах
+    unit_amount: 900, // 9 евро в центах
     currency: "eur",
     product_data: {
       name: "Webinar Registration",
@@ -50,7 +50,10 @@ async function createPaymentLink(priceId) {
       },
     ],
   });
-  return { url: paymentLink.url, priceId };
+  return {
+    url: paymentLink.url,
+    priceId,
+  };
 }
 
 // Функция для генерации ссылки на оплату Робокассы
@@ -163,7 +166,6 @@ bot.on("callback_query:data", async (ctx) => {
   } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
-    await session.save();
 
     let paymentLink;
 
@@ -188,11 +190,15 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save();
     } else if (action === "euros") {
       try {
-        const { url, priceId } = await createPaymentLink();
+        const priceId = await createPrice();
+        const paymentLinkData = await createPaymentLink(priceId);
+        paymentLink = paymentLinkData.url;
+        paymentId = paymentLinkData.priceId; // Используем priceId как paymentId
+
         await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
           reply_markup: new InlineKeyboard().add({
             text: "Оплатить в €",
-            url: url,
+            url: paymentLink,
           }),
         });
 
@@ -201,7 +207,7 @@ bot.on("callback_query:data", async (ctx) => {
           session.email,
           session.phone,
           ctx.from.id,
-          priceId // Используем priceId как invId для евро
+          paymentId
         );
 
         session.step = "completed";
