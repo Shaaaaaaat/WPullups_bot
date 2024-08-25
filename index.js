@@ -39,7 +39,7 @@ async function createPrice() {
 }
 
 // Функция для создания ссылки на оплату
-async function createPaymentLink(priceId) {
+async function createPaymentLink(priceId, email) {
   const paymentLink = await stripe.paymentLinks.create({
     line_items: [
       {
@@ -47,6 +47,7 @@ async function createPaymentLink(priceId) {
         quantity: 1,
       },
     ],
+    customer_email: email, // Добавление email клиента
   });
   return paymentLink.url;
 }
@@ -145,14 +146,14 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save();
 
     if (action === "rubles") {
-      const paymentLink = generatePaymentLink(paymentId, 3, session.email);
+      const paymentLink = generatePaymentLink(paymentId, session.email);
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
     } else if (action === "euros") {
       try {
         const priceId = await createPrice();
-        const paymentLink = await createPaymentLink(priceId);
+        const paymentLink = await createPaymentLink(priceId, session.email);
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
