@@ -128,6 +128,11 @@ bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
+  if (!session) {
+    console.log("Session not found for user:", ctx.from.id.toString());
+    return;
+  }
+
   if (action === "register") {
     await ctx.reply(messages.enterName);
     session.step = "awaiting_name";
@@ -198,6 +203,7 @@ bot.on("callback_query:data", async (ctx) => {
       ctx.from.id,
       paymentId
     );
+
     session.step = "completed";
     await session.save();
   } else if (action.startsWith("edit_")) {
@@ -213,6 +219,11 @@ bot.on("callback_query:data", async (ctx) => {
 // Обработчик для ввода данных
 bot.on("message:text", async (ctx) => {
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
+
+  if (!session) {
+    console.log("Session not found for user:", ctx.from.id.toString());
+    return;
+  }
 
   if (session.step === "awaiting_name") {
     session.name = ctx.message.text;
@@ -249,6 +260,16 @@ bot.on("message:text", async (ctx) => {
       await session.save();
     } else {
       await ctx.reply(messages.invalidEmail);
+    }
+  } else if (session.step === "awaiting_confirmation") {
+    if (ctx.message.text === "Все верно") {
+      await ctx.reply("Выберите тип карты для оплаты:", {
+        reply_markup: new InlineKeyboard()
+          .add({ text: "Российская (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
+      });
+      session.step = "awaiting_payment_type";
+      await session.save();
     }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
