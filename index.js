@@ -112,9 +112,7 @@ bot.command("start", async (ctx) => {
     reply_markup: new InlineKeyboard()
       .add({ text: "Записаться на вебинар", callback_data: "register" })
       .row()
-      .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" })
-      .row()
-      .add({ text: "Операторы", callback_data: "operator" }), // Кнопка для получения контакта оператора
+      .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" }),
   });
 });
 
