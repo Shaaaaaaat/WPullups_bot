@@ -1,13 +1,5 @@
 const mongoose = require("mongoose");
 
-// const sessionSchema = new mongoose.Schema({
-//   userId: { type: String, required: true, unique: true },
-//   name: String,
-//   phone: String,
-//   email: String,
-//   step: String,
-// });
-
 const sessionSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   name: { type: String, default: "" },
