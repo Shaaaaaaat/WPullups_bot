@@ -34,12 +34,12 @@ function generatePaymentLink(paymentId, amount, email) {
 
   const signature = crypto
     .createHash("md5")
-    .update(${shopId}:${amount}:${paymentId}:${secretKey1})
+    .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
-  return https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
     email
-  )}&IsTest=0; // Используйте https://auth.robokassa.ru/ для продакшена
+  )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
 // Функция для отправки данных в Airtable
@@ -48,9 +48,9 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
 
-  const url = https://api.airtable.com/v0/${baseId}/${tableId};
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
   const headers = {
-    Authorization: Bearer ${apiKey},
+    Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json",
   };
 
@@ -143,7 +143,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     if (action === "rubles") {
       await ctx.reply(
-        Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}
+        `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
     } else {
       await ctx.reply(messages.paymentLinkEuros);
@@ -162,14 +162,10 @@ bot.on("callback_query:data", async (ctx) => {
     session.step = "completed";
     await session.save(); // Сохранение сессии после завершения
   } else if (action.startsWith("edit_")) {
-    session.step = awaiting_edit_${action.replace("edit_", "")};
+    const field = action.replace("edit_", "");
+    session.step = `awaiting_edit_${field}`;
     await ctx.reply(
-      messages[
-        enter${
-          action.replace("edit_", "").charAt(0).toUpperCase() +
-          action.replace("edit_", "").slice(1)
-        }
-      ]
+      messages[`enter${field.charAt(0).toUpperCase() + field.slice(1)}`]
     );
     await session.save(); // Сохранение сессии после изменения шага
   }
