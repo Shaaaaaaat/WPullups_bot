@@ -1,7 +1,9 @@
 require("dotenv").config();
 const { Bot, InlineKeyboard } = require("grammy");
-const fs = require("fs");
+const express = require("express");
+const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const fs = require("fs");
 const axios = require("axios");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 const connectDB = require("./database");
@@ -26,7 +28,7 @@ function generateUniqueId() {
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
-// Функция для создания объекта Price
+// Функция для создания объекта Price в Stripe
 async function createPrice() {
   const price = await stripe.prices.create({
     unit_amount: 900, // 9 евро в центах
@@ -38,7 +40,7 @@ async function createPrice() {
   return price.id;
 }
 
-// Функция для создания ссылки на оплату
+// Функция для создания ссылки на оплату в Stripe
 async function createPaymentLink(priceId) {
   const paymentLink = await stripe.paymentLinks.create({
     line_items: [
@@ -49,6 +51,21 @@ async function createPaymentLink(priceId) {
     ],
   });
   return paymentLink.url;
+}
+
+// Функция для генерации ссылки на оплату Робокассы
+function generatePaymentLinkRobokassa(paymentId, amount, email) {
+  const shopId = process.env.ROBO_ID;
+  const secretKey1 = process.env.ROBO_SECRET1;
+
+  const signature = crypto
+    .createHash("md5")
+    .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
+    .digest("hex");
+
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
+    email
+  )}&IsTest=0`;
 }
 
 // Функция для отправки данных в Airtable
@@ -83,6 +100,10 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
     );
   }
 }
+
+// Создаем и настраиваем Express-приложение
+const app = express();
+app.use(bodyParser.json());
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
@@ -144,19 +165,26 @@ bot.on("callback_query:data", async (ctx) => {
     session.paymentId = paymentId;
     await session.save();
 
+    let paymentLink;
+
     if (action === "rubles") {
-      // Пропустил функцию generatePaymentLink, так как она не была определена
-      const paymentLink = `https://payment.link/rubles/${paymentId}`;
-      await ctx.reply(
-        `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-      );
+      paymentLink = generatePaymentLinkRobokassa(paymentId, 3, session.email);
+      await ctx.reply("Нажмите на кнопку ниже для оплаты в рублях:", {
+        reply_markup: new InlineKeyboard().add({
+          text: "Оплатить в ₽",
+          url: paymentLink,
+        }),
+      });
     } else if (action === "euros") {
       try {
         const priceId = await createPrice();
-        const paymentLink = await createPaymentLink(priceId);
-        await ctx.reply(
-          `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-        );
+        paymentLink = await createPaymentLink(priceId);
+        await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
+          reply_markup: new InlineKeyboard().add({
+            text: "Оплатить в €",
+            url: paymentLink,
+          }),
+        });
       } catch (error) {
         await ctx.reply(
           "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
@@ -218,53 +246,29 @@ bot.on("message:text", async (ctx) => {
       reply_markup: new InlineKeyboard()
         .add({ text: "Все верно", callback_data: "confirm_payment" })
         .row()
-        .add({ text: "Изменить", callback_data: "edit_info" }),
+        .add({ text: "Редактировать", callback_data: "edit_info" }),
     });
-
     session.step = "awaiting_confirmation";
     await session.save();
-  } else if (session.step === "awaiting_confirmation") {
-    if (ctx.message.text === "Все верно") {
-      await ctx.reply("Выберите тип карты для оплаты:", {
+  } else if (session.step.startsWith("awaiting_edit")) {
+    const editField = session.step.replace("awaiting_edit_", "");
+    session[editField] = ctx.message.text;
+    await ctx.reply(`Ваше ${editField} обновлено.`);
+    session.step = "awaiting_confirmation";
+    await ctx.reply(
+      messages.confirmation
+        .replace("{{ $ФИ }}", session.name)
+        .replace("{{ $Tel }}", session.phone)
+        .replace("{{ $email }}", session.email),
+      {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
-      });
-      session.step = "awaiting_payment_type";
-      await session.save();
-    }
-  } else if (session.step.startsWith("awaiting_edit_")) {
-    const field = session.step.replace("awaiting_edit_", "");
-    if (field === "name") {
-      session.name = ctx.message.text;
-    } else if (field === "phone") {
-      const phone = ctx.message.text;
-      if (/^\+\d+$/.test(phone)) {
-        session.phone = phone;
-      } else {
-        await ctx.reply(messages.invalidPhone);
-        return;
+          .add({ text: "Все верно", callback_data: "confirm_payment" })
+          .row()
+          .add({ text: "Редактировать", callback_data: "edit_info" }),
       }
-    } else if (field === "email") {
-      session.email = ctx.message.text;
-    }
-
-    const confirmationMessage = messages.confirmation
-      .replace("{{ $ФИ }}", session.name)
-      .replace("{{ $Tel }}", session.phone)
-      .replace("{{ $email }}", session.email);
-
-    await ctx.reply(confirmationMessage, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
-        .add({ text: "Изменить", callback_data: "edit_info" }),
-    });
-
-    session.step = "awaiting_confirmation";
-    await session.save();
+    );
   }
 });
 
-// Запускаем бота
+// Запуск бота
 bot.start();
