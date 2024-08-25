@@ -27,19 +27,14 @@ function generateUniqueId() {
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
-// Функция для генерации ссылки на оплату
+// Функция для генерации ссылки на оплату Stripe
 function generatePaymentLink(paymentId, amount, email) {
-  const shopId = process.env.ROBO_ID;
-  const secretKey1 = process.env.ROBO_SECRET1;
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const stripeBaseUrl = process.env.STRIPE_BASE_URL;
 
-  const signature = crypto
-    .createHash("md5")
-    .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
-    .digest("hex");
-
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
+  return `${stripeBaseUrl}/checkout/${paymentId}?amount=${amount}&email=${encodeURIComponent(
     email
-  )}&IsTest=0`;
+  )}&secret_key=${stripeSecretKey}`;
 }
 
 // Функция для отправки данных в Airtable
@@ -142,10 +137,10 @@ bot.on("callback_query:data", async (ctx) => {
 
     let paymentLink;
     if (action === "rubles") {
-      paymentLink = generatePaymentLink(paymentId, 3, session.email);
+      paymentLink = generatePaymentLink(paymentId, 300, session.email); // Пример суммы в копейках для рублевого расчета
       await ctx.reply(`Оплатите по ссылке: ${paymentLink}`);
     } else if (action === "euros") {
-      paymentLink = generatePaymentLink(paymentId, 9, session.email); // Обратите внимание, что здесь 9 евро
+      paymentLink = generatePaymentLink(paymentId, 900, session.email); // Пример суммы в центрах для евро расчета
       await ctx.reply(`Оплатите по ссылке: ${paymentLink}`);
     }
 
