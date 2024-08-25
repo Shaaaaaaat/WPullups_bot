@@ -128,8 +128,8 @@ bot.on("callback_query:data", async (ctx) => {
     if (session.step === "awaiting_confirmation") {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Российская карта (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная карта (€)", callback_data: "euros" }),
+          .add({ text: "Российская (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save(); // Сохранение сессии после изменения шага
@@ -212,8 +212,8 @@ bot.on("message:text", async (ctx) => {
     if (ctx.message.text === "Все верно") {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Российская карта (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная карта (€)", callback_data: "euros" }),
+          .add({ text: "Российская (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save(); // Сохранение сессии после изменения шага
