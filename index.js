@@ -42,29 +42,29 @@ function generatePaymentLink(paymentId, amount, email) {
 }
 
 // Функция для создания ссылки на оплату через Stripe
-async function createStripeCheckoutSession(amount, email) {
+async function createStripeCheckoutSession(amountInEuros, email) {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: "eur",
+            currency: "eur", // Валюта указывается как евро
             product_data: {
-              name: "Webinar Registration",
+              name: "Webinar Registration", // Название продукта
             },
-            unit_amount: amount * 100, // amount in cents
+            unit_amount: amountInEuros * 100, // amount в евро преобразуется в центы
           },
-          quantity: 1,
+          quantity: 1, // Количество товара
         },
       ],
-      mode: "payment",
-      success_url: process.env.STRIPE_SUCCESS,
-      cancel_url: process.env.STRIPE_CANCEL,
-      customer_email: email,
+      mode: "payment", // Режим оплаты
+      success_url: process.env.STRIPE_SUCCESS_URL, // URL для успешной оплаты
+      cancel_url: process.env.STRIPE_CANCEL_URL, // URL для отмены оплаты
+      customer_email: email, // Электронная почта клиента
     });
 
-    return session.url;
+    return session.url; // Возвращаем ссылку на оплату
   } catch (error) {
     console.error("Error creating Stripe checkout session:", error);
     throw error;
