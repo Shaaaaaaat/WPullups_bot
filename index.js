@@ -264,6 +264,15 @@ bot.on("message:text", async (ctx) => {
       });
       session.step = "awaiting_payment_type";
       await session.save();
+    } else if (ctx.message.text === "Изменить") {
+      await ctx.reply(messages.editChoice, {
+        reply_markup: new InlineKeyboard()
+          .add({ text: "ФИ", callback_data: "edit_name" })
+          .add({ text: "Телефон", callback_data: "edit_phone" })
+          .add({ text: "E-mail", callback_data: "edit_email" }),
+      });
+      session.step = "awaiting_edit";
+      await session.save();
     }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
