@@ -198,18 +198,13 @@ bot.on("callback_query:data", async (ctx) => {
       ctx.from.id,
       paymentId
     );
-
     session.step = "completed";
     await session.save();
   } else if (action.startsWith("edit_")) {
-    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
+    const field = action.replace("edit_", "");
+    session.step = `awaiting_edit_${field}`;
     await ctx.reply(
-      messages[
-        `edit${
-          action.replace("edit_", "").charAt(0).toUpperCase() +
-          action.replace("edit_", "").slice(1)
-        }`
-      ]
+      messages[`edit${field.charAt(0).toUpperCase() + field.slice(1)}`]
     );
     await session.save();
   }
@@ -254,16 +249,6 @@ bot.on("message:text", async (ctx) => {
       await session.save();
     } else {
       await ctx.reply(messages.invalidEmail);
-    }
-  } else if (session.step === "awaiting_confirmation") {
-    if (ctx.message.text === "Все верно") {
-      await ctx.reply("Выберите тип карты для оплаты:", {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
-      });
-      session.step = "awaiting_payment_type";
-      await session.save();
     }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
