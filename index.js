@@ -42,31 +42,26 @@ function generatePaymentLink(paymentId, amount, email) {
 }
 
 // Функция для создания ссылки на оплату через Stripe
-async function createStripeCheckoutSession(amountInEuros, email) {
+async function createStripePaymentLink(amount) {
   try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+    const paymentLink = await stripe.paymentLinks.create({
       line_items: [
         {
           price_data: {
-            currency: "eur", // Валюта указывается как евро
+            currency: "eur",
             product_data: {
-              name: "Webinar Registration", // Название продукта
+              name: "Webinar Registration",
             },
-            unit_amount: amountInEuros * 100, // amount в евро преобразуется в центы
+            unit_amount: amount * 100, // amount in cents
           },
-          quantity: 1, // Количество товара
+          quantity: 1,
         },
       ],
-      mode: "payment", // Режим оплаты
-      success_url: process.env.STRIPE_SUCCESS_URL, // URL для успешной оплаты
-      cancel_url: process.env.STRIPE_CANCEL_URL, // URL для отмены оплаты
-      customer_email: email, // Электронная почта клиента
     });
 
-    return session.url; // Возвращаем ссылку на оплату
+    return paymentLink.url;
   } catch (error) {
-    console.error("Error creating Stripe checkout session:", error);
+    console.error("Error creating Stripe payment link:", error);
     throw error;
   }
 }
@@ -171,7 +166,7 @@ bot.on("callback_query:data", async (ctx) => {
       );
     } else if (action === "euros") {
       try {
-        const paymentLink = await createStripeCheckoutSession(9, session.email);
+        const paymentLink = await createStripePaymentLink(9); // Указываем сумму в евро
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
