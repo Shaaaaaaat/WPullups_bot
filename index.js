@@ -96,7 +96,12 @@ bot.command("start", async (ctx) => {
     reply_markup: new InlineKeyboard()
       .add({ text: "Записаться на вебинар", callback_data: "register" })
       .row()
-      .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" }),
+      .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" })
+      .row()
+      .add({
+        text: "Получить контакт менеджера",
+        callback_data: "operator_contact",
+      }),
   });
 });
 
@@ -184,6 +189,10 @@ bot.on("callback_query:data", async (ctx) => {
       ]
     );
     await session.save();
+  } else if (action === "operator_contact") {
+    await ctx.reply(
+      "Если у вас остался какой-то вопрос, вы можете написать нашему менеджеру Никите: @IDC_Manager"
+    );
   }
 });
 
