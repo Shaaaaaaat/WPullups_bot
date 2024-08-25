@@ -128,11 +128,6 @@ bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
-  if (!session) {
-    await ctx.reply("Сессия не найдена. Попробуйте начать регистрацию снова.");
-    return;
-  }
-
   if (action === "register") {
     await ctx.reply(messages.enterName);
     session.step = "awaiting_name";
@@ -207,14 +202,10 @@ bot.on("callback_query:data", async (ctx) => {
     session.step = "completed";
     await session.save();
   } else if (action.startsWith("edit_")) {
-    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
+    const field = action.replace("edit_", "");
+    session.step = `awaiting_edit_${field}`;
     await ctx.reply(
-      messages[
-        `enter${
-          action.replace("edit_", "").charAt(0).toUpperCase() +
-          action.replace("edit_", "").slice(1)
-        }`
-      ]
+      messages[`enter${field.charAt(0).toUpperCase() + field.slice(1)}`]
     );
     await session.save();
   }
@@ -223,11 +214,6 @@ bot.on("callback_query:data", async (ctx) => {
 // Обработчик для ввода данных
 bot.on("message:text", async (ctx) => {
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
-
-  if (!session) {
-    await ctx.reply("Сессия не найдена. Попробуйте начать регистрацию снова.");
-    return;
-  }
 
   if (session.step === "awaiting_name") {
     session.name = ctx.message.text;
@@ -249,15 +235,16 @@ bot.on("message:text", async (ctx) => {
     if (/\S+@\S+\.\S+/.test(email)) {
       session.email = email;
       const confirmationMessage = messages.confirmation
-        .replace("{{ $name }}", session.name)
-        .replace("{{ $email }}", session.email)
-        .replace("{{ $phone }}", session.phone);
+        .replace("{{ $ФИ }}", session.name)
+        .replace("{{ $телефон }}", session.phone)
+        .replace("{{ $email }}", session.email);
+
       await ctx.reply(confirmationMessage, {
-        reply_markup: new InlineKeyboard().add({
-          text: "Да, я подтверждаю",
-          callback_data: "confirm_payment",
-        }),
+        reply_markup: new InlineKeyboard()
+          .add({ text: "Подтвердить", callback_data: "confirm_payment" })
+          .add({ text: "Редактировать данные", callback_data: "edit_info" }),
       });
+
       session.step = "awaiting_confirmation";
       await session.save();
     } else {
@@ -267,11 +254,12 @@ bot.on("message:text", async (ctx) => {
     const field = session.step.replace("awaiting_edit_", "");
     session[field] = ctx.message.text;
     await ctx.reply(
-      `${field.charAt(0).toUpperCase() + field.slice(1)} обновлено.`
+      messages[`edit${field.charAt(0).toUpperCase() + field.slice(1)}`]
     );
-    session.step = "awaiting_edit";
-    await ctx.save();
+    session.step = "awaiting_confirmation";
+    await session.save();
   }
 });
 
+// Запуск бота
 bot.start();
