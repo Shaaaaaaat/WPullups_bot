@@ -128,6 +128,8 @@ bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
+  if (!session) return;
+
   if (action === "register") {
     await ctx.reply(messages.enterName);
     session.step = "awaiting_name";
@@ -202,14 +204,10 @@ bot.on("callback_query:data", async (ctx) => {
     session.step = "completed";
     await session.save();
   } else if (action.startsWith("edit_")) {
-    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
+    const field = action.replace("edit_", "");
+    session.step = `awaiting_edit_${field}`;
     await ctx.reply(
-      messages[
-        `edit${
-          action.replace("edit_", "").charAt(0).toUpperCase() +
-          action.replace("edit_", "").slice(1)
-        }`
-      ]
+      messages[`edit${field.charAt(0).toUpperCase() + field.slice(1)}`]
     );
     await session.save();
   }
@@ -218,6 +216,8 @@ bot.on("callback_query:data", async (ctx) => {
 // Обработчик для ввода данных
 bot.on("message:text", async (ctx) => {
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
+
+  if (!session) return;
 
   if (session.step === "awaiting_name") {
     session.name = ctx.message.text;
@@ -255,54 +255,11 @@ bot.on("message:text", async (ctx) => {
     } else {
       await ctx.reply(messages.invalidEmail);
     }
-  } else if (session.step === "awaiting_confirmation") {
-    if (ctx.message.text === "Все верно") {
-      await ctx.reply("Выберите тип карты для оплаты:", {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
-      });
-      session.step = "awaiting_payment_type";
-      await session.save();
-    } else if (ctx.message.text === "Изменить") {
-      await ctx.reply(messages.editChoice, {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "ФИ", callback_data: "edit_name" })
-          .add({ text: "Телефон", callback_data: "edit_phone" })
-          .add({ text: "E-mail", callback_data: "edit_email" }),
-      });
-      session.step = "awaiting_edit";
-      await session.save();
-    }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
-    if (field === "name") {
-      session.name = ctx.message.text;
-    } else if (field === "phone") {
-      const phone = ctx.message.text;
-      if (/^\+\d+$/.test(phone)) {
-        session.phone = phone;
-      } else {
-        await ctx.reply(messages.invalidPhone);
-        return;
-      }
-    } else if (field === "email") {
-      session.email = ctx.message.text;
-    }
-
-    const confirmationMessage = messages.confirmation
-      .replace("{{ $ФИ }}", session.name)
-      .replace("{{ $Tel }}", session.phone)
-      .replace("{{ $email }}", session.email);
-
-    await ctx.reply(confirmationMessage, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Все верно", callback_data: "confirm_payment" })
-        .row()
-        .add({ text: "Изменить", callback_data: "edit_info" }),
-    });
-
-    session.step = "awaiting_confirmation";
+    session[field] = ctx.message.text;
+    await ctx.reply(`Ваш ${field} был обновлён.`);
+    session.step = "completed";
     await session.save();
   }
 });
