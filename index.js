@@ -152,10 +152,10 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save();
   } else if (action === "confirm_payment") {
     if (session.step === "awaiting_confirmation") {
-      await ctx.reply("Выберите тип карты для оплаты:", {
+      await ctx.reply("Выберите способ оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
+          .add({ text: "Оплатить в ₽", callback_data: "rubles" })
+          .add({ text: "Оплатить в €", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save();
