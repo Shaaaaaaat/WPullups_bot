@@ -152,10 +152,10 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save();
   } else if (action === "confirm_payment") {
     if (session.step === "awaiting_confirmation") {
-      await ctx.reply("Выберите способ оплаты:", {
+      await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Оплатить в ₽", callback_data: "rubles" })
-          .add({ text: "Оплатить в €", callback_data: "euros" }),
+          .add({ text: "Российская (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save();
@@ -165,22 +165,26 @@ bot.on("callback_query:data", async (ctx) => {
     session.paymentId = paymentId;
     await session.save();
 
+    let paymentLink;
+
     if (action === "rubles") {
-      const paymentLink = generatePaymentLinkRobokassa(
-        paymentId,
-        3,
-        session.email
-      );
-      await ctx.reply(
-        `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-      );
+      paymentLink = generatePaymentLinkRobokassa(paymentId, 3, session.email);
+      await ctx.reply("Нажмите на кнопку ниже для оплаты в рублях:", {
+        reply_markup: new InlineKeyboard().add({
+          text: "Оплатить в ₽",
+          url: paymentLink,
+        }),
+      });
     } else if (action === "euros") {
       try {
         const priceId = await createPrice();
-        const paymentLink = await createPaymentLink(priceId);
-        await ctx.reply(
-          `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-        );
+        paymentLink = await createPaymentLink(priceId);
+        await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
+          reply_markup: new InlineKeyboard().add({
+            text: "Оплатить в €",
+            url: paymentLink,
+          }),
+        });
       } catch (error) {
         await ctx.reply(
           "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
