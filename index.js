@@ -21,8 +21,8 @@ const messages = loadMessages();
 
 // Функция для генерации уникального ID в допустимом диапазоне
 function generateUniqueId() {
-  const maxId = 2147483647;
-  const minId = 1;
+  const maxId = 2147483647; // Максимально допустимое значение
+  const minId = 1; // Минимально допустимое значение
   return (Date.now() % (maxId - minId + 1)) + minId;
 }
 
@@ -39,7 +39,7 @@ async function createPrice() {
 }
 
 // Функция для создания ссылки на оплату
-async function createPaymentLink(priceId, email) {
+async function createPaymentLink(priceId) {
   const paymentLink = await stripe.paymentLinks.create({
     line_items: [
       {
@@ -47,24 +47,8 @@ async function createPaymentLink(priceId, email) {
         quantity: 1,
       },
     ],
-    customer_email: email,
   });
   return paymentLink.url;
-}
-
-// Функция для генерации ссылки на оплату через Робокассу
-function generatePaymentLinkRobokassa(paymentId, amount, email) {
-  const shopId = process.env.ROBO_ID;
-  const secretKey1 = process.env.ROBO_SECRET1;
-
-  const signature = crypto
-    .createHash("md5")
-    .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
-    .digest("hex");
-
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
-    email
-  )}&IsTest=0`;
 }
 
 // Функция для отправки данных в Airtable
@@ -161,23 +145,18 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save();
 
     if (action === "rubles") {
-      const paymentLink = generatePaymentLinkRobokassa(
-        paymentId,
-        3,
-        session.email
-      );
+      const paymentLink = generatePaymentLink(paymentId, 3, session.email);
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
     } else if (action === "euros") {
       try {
         const priceId = await createPrice();
-        const paymentLink = await createPaymentLink(priceId, session.email);
+        const paymentLink = await createPaymentLink(priceId);
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
       } catch (error) {
-        console.error("Stripe error:", error);
         await ctx.reply(
           "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
         );
