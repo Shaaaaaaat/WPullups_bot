@@ -3,7 +3,7 @@ const { Bot, InlineKeyboard } = require("grammy");
 const fs = require("fs");
 const crypto = require("crypto");
 const axios = require("axios");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")(process.env.STRIPE_KEY);
 const connectDB = require("./database");
 const Session = require("./sessionModel");
 
@@ -59,8 +59,8 @@ async function createStripeCheckoutSession(amount, email) {
         },
       ],
       mode: "payment",
-      success_url: process.env.STRIPE_SUCCESS_URL,
-      cancel_url: process.env.STRIPE_CANCEL_URL,
+      success_url: process.env.STRIPE_SUCCESS,
+      cancel_url: process.env.STRIPE_CANCEL,
       customer_email: email,
     });
 
