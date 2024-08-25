@@ -31,7 +31,7 @@ function generateUniqueId() {
 // Функция для создания объекта Price в Stripe
 async function createPrice() {
   const price = await stripe.prices.create({
-    unit_amount: 900, // 9 евро в центах
+    unit_amount: 100, // 1 евро в центах
     currency: "eur",
     product_data: {
       name: "Webinar Registration",
@@ -50,10 +50,7 @@ async function createPaymentLink(priceId) {
       },
     ],
   });
-  return {
-    url: paymentLink.url,
-    priceId,
-  };
+  return paymentLink.url;
 }
 
 // Функция для генерации ссылки на оплату Робокассы
@@ -72,7 +69,7 @@ function generatePaymentLinkRobokassa(paymentId, amount, email) {
 }
 
 // Функция для отправки данных в Airtable
-async function sendToAirtable(name, email, phone, tgId, invId) {
+async function sendToAirtable(name, email, phone, tgId, paymentIdOrPriceId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
@@ -90,7 +87,7 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
       Phone: phone,
       tgId: tgId,
       Tag: "Webinar",
-      inv_id: invId,
+      inv_id: paymentIdOrPriceId, // Используем paymentIdOrPriceId
     },
   };
 
@@ -164,60 +161,52 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save();
     }
   } else if (action === "rubles" || action === "euros") {
-    const paymentId = generateUniqueId();
-    session.paymentId = paymentId;
+    let paymentIdOrPriceId = generateUniqueId(); // Генерируем уникальный ID для Робокассы
+    session.paymentId = paymentIdOrPriceId;
+    await session.save();
 
     let paymentLink;
 
     if (action === "rubles") {
-      paymentLink = generatePaymentLinkRobokassa(paymentId, 3, session.email);
+      paymentLink = generatePaymentLinkRobokassa(
+        paymentIdOrPriceId,
+        3,
+        session.email
+      );
       await ctx.reply("Нажмите на кнопку ниже для оплаты в рублях:", {
         reply_markup: new InlineKeyboard().add({
           text: "Оплатить в ₽",
           url: paymentLink,
         }),
       });
-
-      await sendToAirtable(
-        session.name,
-        session.email,
-        session.phone,
-        ctx.from.id,
-        paymentId
-      );
-
-      session.step = "completed";
-      await session.save();
     } else if (action === "euros") {
       try {
         const priceId = await createPrice();
-        const paymentLinkData = await createPaymentLink(priceId);
-        paymentLink = paymentLinkData.url;
-        paymentId = paymentLinkData.priceId; // Используем priceId как paymentId
-
+        paymentLink = await createPaymentLink(priceId);
+        paymentIdOrPriceId = priceId; // Используем priceId вместо paymentId
         await ctx.reply("Нажмите на кнопку ниже для оплаты в евро:", {
           reply_markup: new InlineKeyboard().add({
             text: "Оплатить в €",
             url: paymentLink,
           }),
         });
-
-        await sendToAirtable(
-          session.name,
-          session.email,
-          session.phone,
-          ctx.from.id,
-          paymentId
-        );
-
-        session.step = "completed";
-        await session.save();
       } catch (error) {
         await ctx.reply(
           "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
         );
       }
     }
+
+    await sendToAirtable(
+      session.name,
+      session.email,
+      session.phone,
+      ctx.from.id,
+      paymentIdOrPriceId // Передаем правильный идентификатор
+    );
+
+    session.step = "completed";
+    await session.save();
   } else if (action.startsWith("edit_")) {
     session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
