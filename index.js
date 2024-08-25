@@ -202,10 +202,14 @@ bot.on("callback_query:data", async (ctx) => {
     session.step = "completed";
     await session.save();
   } else if (action.startsWith("edit_")) {
-    const field = action.replace("edit_", "");
-    session.step = `awaiting_edit_${field}`;
+    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
     await ctx.reply(
-      messages[`enter${field.charAt(0).toUpperCase() + field.slice(1)}`]
+      messages[
+        `edit${
+          action.replace("edit_", "").charAt(0).toUpperCase() +
+          action.replace("edit_", "").slice(1)
+        }`
+      ]
     );
     await session.save();
   }
@@ -236,13 +240,14 @@ bot.on("message:text", async (ctx) => {
       session.email = email;
       const confirmationMessage = messages.confirmation
         .replace("{{ $ФИ }}", session.name)
-        .replace("{{ $телефон }}", session.phone)
+        .replace("{{ $Tel }}", session.phone)
         .replace("{{ $email }}", session.email);
 
       await ctx.reply(confirmationMessage, {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Подтвердить", callback_data: "confirm_payment" })
-          .add({ text: "Редактировать данные", callback_data: "edit_info" }),
+          .add({ text: "Все верно", callback_data: "confirm_payment" })
+          .row()
+          .add({ text: "Изменить", callback_data: "edit_info" }),
       });
 
       session.step = "awaiting_confirmation";
@@ -250,16 +255,48 @@ bot.on("message:text", async (ctx) => {
     } else {
       await ctx.reply(messages.invalidEmail);
     }
+  } else if (session.step === "awaiting_confirmation") {
+    if (ctx.message.text === "Все верно") {
+      await ctx.reply("Выберите тип карты для оплаты:", {
+        reply_markup: new InlineKeyboard()
+          .add({ text: "Российская (₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (€)", callback_data: "euros" }),
+      });
+      session.step = "awaiting_payment_type";
+      await session.save();
+    }
   } else if (session.step.startsWith("awaiting_edit_")) {
     const field = session.step.replace("awaiting_edit_", "");
-    session[field] = ctx.message.text;
-    await ctx.reply(
-      messages[`edit${field.charAt(0).toUpperCase() + field.slice(1)}`]
-    );
+    if (field === "name") {
+      session.name = ctx.message.text;
+    } else if (field === "phone") {
+      const phone = ctx.message.text;
+      if (/^\+\d+$/.test(phone)) {
+        session.phone = phone;
+      } else {
+        await ctx.reply(messages.invalidPhone);
+        return;
+      }
+    } else if (field === "email") {
+      session.email = ctx.message.text;
+    }
+
+    const confirmationMessage = messages.confirmation
+      .replace("{{ $ФИ }}", session.name)
+      .replace("{{ $Tel }}", session.phone)
+      .replace("{{ $email }}", session.email);
+
+    await ctx.reply(confirmationMessage, {
+      reply_markup: new InlineKeyboard()
+        .add({ text: "Все верно", callback_data: "confirm_payment" })
+        .row()
+        .add({ text: "Изменить", callback_data: "edit_info" }),
+    });
+
     session.step = "awaiting_confirmation";
     await session.save();
   }
 });
 
-// Запуск бота
+// Запускаем бота
 bot.start();
