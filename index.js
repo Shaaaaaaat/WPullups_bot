@@ -98,10 +98,7 @@ bot.command("start", async (ctx) => {
       .row()
       .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" })
       .row()
-      .add({
-        text: "Получить контакт менеджера",
-        callback_data: "operator_contact",
-      }),
+      .add({ text: "Операторы", callback_data: "operator" }), // Кнопка для получения контакта оператора
   });
 });
 
@@ -189,7 +186,7 @@ bot.on("callback_query:data", async (ctx) => {
       ]
     );
     await session.save();
-  } else if (action === "operator_contact") {
+  } else if (action === "operator") {
     await ctx.reply(
       "Если у вас остался какой-то вопрос, вы можете написать нашему менеджеру Никите: @IDC_Manager"
     );
