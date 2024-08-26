@@ -168,12 +168,10 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (action === "rubles" || action === "euros") {
-    const paymentId = generateUniqueId();
-    session.paymentId = paymentId;
-    await session.save(); // Сохранение сессии после генерации paymentId
-
     if (action === "rubles") {
       const paymentLink = generatePaymentLink(paymentId, 3, session.email);
+      const paymentId = generateUniqueId();
+      session.paymentId = paymentId;
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
