@@ -88,7 +88,6 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
       tgId: tgId,
       Tag: "Webinar",
       inv_id: invId, // Добавляем inv_id
-      price_id: prcieId,
     },
   };
 
@@ -172,7 +171,7 @@ bot.on("callback_query:data", async (ctx) => {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
     const priceId = await createPrice();
-    session.priceId = priceId;
+    session.paymentId = priceId;
 
     await session.save(); // Сохранение сессии после генерации paymentId
 
@@ -200,8 +199,7 @@ bot.on("callback_query:data", async (ctx) => {
       session.email,
       session.phone,
       ctx.from.id,
-      paymentId, // Передаем inv_id
-      priceId
+      paymentId // Передаем inv_id
     );
 
     // Очистите сессию после отправки данных в Airtable
