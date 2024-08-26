@@ -181,6 +181,7 @@ bot.on("callback_query:data", async (ctx) => {
       try {
         const priceId = await createPrice();
         const paymentLink = await createPaymentLink(priceId);
+        session.paymentId = priceId;
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
