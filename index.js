@@ -172,10 +172,10 @@ bot.on("callback_query:data", async (ctx) => {
     const paymentId = await generateUniqueId();
     const priceId = await createPrice();
     const paymentLink = await createPaymentLink(priceId);
-    session.newPrice = paymentLink.slice(22);
+    session.newPrice = paymentLink.slice(23);
     session.paymentId = paymentId;
     console.log(paymentId);
-    console.log(paymentLink.slice(22));
+    console.log(paymentLink.slice(23));
 
     await session.save(); // Сохранение сессии после генерации paymentId
 
