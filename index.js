@@ -170,11 +170,9 @@ bot.on("callback_query:data", async (ctx) => {
     }
   } else if (action === "rubles" || action === "euros") {
     const paymentId = await generateUniqueId();
-    const priceId = await createPrice();
+
     session.paymentId = paymentId;
-    session.priceId = priceId;
     console.log(paymentId);
-    console.log(priceId);
 
     await session.save(); // Сохранение сессии после генерации paymentId
 
@@ -185,7 +183,12 @@ bot.on("callback_query:data", async (ctx) => {
       );
     } else if (action === "euros") {
       try {
+        const priceId = await createPrice();
         const paymentLink = await createPaymentLink(priceId);
+        session.newPrice = paymentLink.slice(22);
+        console.log(newPrice);
+        await session.save();
+
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
