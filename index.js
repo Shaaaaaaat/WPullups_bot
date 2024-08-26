@@ -201,7 +201,7 @@ bot.on("callback_query:data", async (ctx) => {
       session.phone,
       ctx.from.id,
       paymentId, // Передаем inv_id
-      priceId
+      1
     );
 
     // Очистите сессию после отправки данных в Airtable
