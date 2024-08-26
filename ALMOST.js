@@ -69,7 +69,7 @@ async function createPaymentLink(priceId) {
 }
 
 // Функция для отправки данных в Airtable
-async function sendToAirtable(name, email, phone, tgId, invId) {
+async function sendToAirtable(name, email, phone, tgId, invId, prId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
@@ -88,6 +88,7 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
       tgId: tgId,
       Tag: "Webinar",
       inv_id: invId, // Добавляем inv_id
+      price_id: prId,
     },
   };
 
@@ -168,8 +169,12 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (action === "rubles" || action === "euros") {
-    const paymentId = generateUniqueId();
+    const paymentId = await generateUniqueId();
+    const priceId = await createPrice();
+    const paymentLink = await createPaymentLink(priceId);
+    session.newPrice = paymentLink.slice(23);
     session.paymentId = paymentId;
+
     await session.save(); // Сохранение сессии после генерации paymentId
 
     if (action === "rubles") {
@@ -179,8 +184,6 @@ bot.on("callback_query:data", async (ctx) => {
       );
     } else if (action === "euros") {
       try {
-        const priceId = await createPrice();
-        const paymentLink = await createPaymentLink(priceId);
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
@@ -197,7 +200,8 @@ bot.on("callback_query:data", async (ctx) => {
       session.email,
       session.phone,
       ctx.from.id,
-      paymentId // Передаем inv_id
+      session.paymentId, // Передаем inv_id
+      session.newPrice
     );
 
     // Очистите сессию после отправки данных в Airtable
