@@ -171,19 +171,21 @@ bot.on("callback_query:data", async (ctx) => {
   } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
     const priceId = await createPrice();
-    session.paymentId = paymentId;
-    session.priceId = priceId;
 
     await session.save(); // Сохранение сессии после генерации paymentId
 
     if (action === "rubles") {
       const paymentLink = generatePaymentLink(paymentId, 3, session.email);
+      session.paymentId = paymentId;
+      session.priceId = 0;
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
     } else if (action === "euros") {
       try {
         const paymentLink = await createPaymentLink(priceId);
+        session.paymentId = 0;
+        session.priceId = priceId;
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
