@@ -187,32 +187,26 @@ bot.on("callback_query:data", async (ctx) => {
         paymentId // Передаем inv_id
       );
     } else if (action === "euros") {
-      try {
-        const priceId = await createPrice();
-        const paymentLink = await createPaymentLink(priceId);
-        await ctx.reply(
-          `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-        );
+      const priceId = await createPrice();
+      const paymentLink = await createPaymentLink(priceId);
+      await ctx.reply(
+        `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
+      );
 
-        // Отправьте данные в Airtable с inv_id
-        await sendToAirtable(
-          session.name,
-          session.email,
-          session.phone,
-          ctx.from.id,
-          priceId // Передаем inv_id
-        );
-      } catch (error) {
-        await ctx.reply(
-          "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
-        );
-      }
+      // Отправьте данные в Airtable с inv_id
+      await sendToAirtable(
+        session.name,
+        session.email,
+        session.phone,
+        ctx.from.id,
+        priceId // Передаем inv_id
+      );
     }
-
-    // Очистите сессию после отправки данных в Airtable
-    session.step = "completed";
-    await session.save(); // Сохранение сессии после завершения
   }
+
+  // Очистите сессию после отправки данных в Airtable
+  session.step = "completed";
+  await session.save(); // Сохранение сессии после завершения
 });
 
 // Обработчик для ввода данных
