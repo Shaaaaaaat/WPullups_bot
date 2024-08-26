@@ -7,7 +7,6 @@ const fs = require("fs");
 const axios = require("axios");
 const connectDB = require("./database");
 const Session = require("./sessionModel");
-const stripe = require("stripe")(process.env.STRIPE_KEY); // Добавьте эту строку
 
 // Создаем экземпляр бота
 const bot = new Bot(process.env.BOT_API_KEY); // Ваш API ключ от Telegram бота
@@ -41,31 +40,6 @@ function generatePaymentLink(paymentId, amount, email) {
   return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
     email
   )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
-}
-
-// Функция для создания объекта Price
-async function createPrice() {
-  const price = await stripe.prices.create({
-    unit_amount: 900, // 9 евро в центах
-    currency: "eur",
-    product_data: {
-      name: "Webinar Registration",
-    },
-  });
-  return price.id;
-}
-
-// Функция для создания ссылки на оплату
-async function createPaymentLink(priceId) {
-  const paymentLink = await stripe.paymentLinks.create({
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-  });
-  return paymentLink.url;
 }
 
 // Функция для отправки данных в Airtable
@@ -121,6 +95,7 @@ bot.command("start", async (ctx) => {
   });
 });
 
+// Обработчик для callback_query, связанных с действиями
 bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
@@ -128,7 +103,7 @@ bot.on("callback_query:data", async (ctx) => {
   if (action === "register") {
     await ctx.reply(messages.enterName);
     session.step = "awaiting_name";
-    await session.save();
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "info") {
     await ctx.reply(messages.webinarInfo, {
       reply_markup: new InlineKeyboard().add({
@@ -139,7 +114,7 @@ bot.on("callback_query:data", async (ctx) => {
   } else if (action === "register_from_info") {
     await ctx.reply(messages.enterName);
     session.step = "awaiting_name";
-    await session.save();
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "edit_info") {
     await ctx.reply(messages.editChoice, {
       reply_markup: new InlineKeyboard()
@@ -148,7 +123,7 @@ bot.on("callback_query:data", async (ctx) => {
         .add({ text: "E-mail", callback_data: "edit_email" }),
     });
     session.step = "awaiting_edit";
-    await session.save();
+    await session.save(); // Сохранение сессии после изменения шага
   } else if (action === "confirm_payment") {
     if (session.step === "awaiting_confirmation") {
       await ctx.reply("Выберите тип карты для оплаты:", {
@@ -157,66 +132,42 @@ bot.on("callback_query:data", async (ctx) => {
           .add({ text: "Зарубежная (€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
-      await session.save();
+      await session.save(); // Сохранение сессии после изменения шага
     }
-  } else if (action === "rubles") {
+  } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
     session.paymentId = paymentId;
-    await session.save();
+    await session.save(); // Сохранение сессии после генерации paymentId
 
-    const paymentLink = `https://payment.link/rubles/${paymentId}`; // Замените на вашу реальную ссылку
-    await ctx.reply(
-      `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-    );
+    const paymentLink = generatePaymentLink(paymentId, 3, session.email);
 
-    await sendToAirtable(
-      session.name,
-      session.email,
-      session.phone,
-      ctx.from.id,
-      paymentId
-    );
-
-    session.step = "completed";
-    await session.save();
-  } else if (action === "euros") {
-    try {
-      const priceId = await createPrice();
-      const paymentLink = await createPaymentLink(priceId);
+    if (action === "rubles") {
       await ctx.reply(
-        `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
+        `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
-    } catch (error) {
-      await ctx.reply(
-        "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
-      );
+    } else {
+      await ctx.reply(messages.paymentLinkEuros);
     }
 
-    const paymentId = generateUniqueId(); // Генерация ID для Airtable
-    session.paymentId = paymentId;
-    await session.save();
-
+    // Отправьте данные в Airtable с inv_id
     await sendToAirtable(
       session.name,
       session.email,
       session.phone,
       ctx.from.id,
-      paymentId
+      paymentId // Передаем inv_id
     );
 
+    // Очистите сессию после отправки данных в Airtable
     session.step = "completed";
-    await session.save();
+    await session.save(); // Сохранение сессии после завершения
   } else if (action.startsWith("edit_")) {
-    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
+    const field = action.replace("edit_", "");
+    session.step = `awaiting_edit_${field}`;
     await ctx.reply(
-      messages[
-        `enter${
-          action.replace("edit_", "").charAt(0).toUpperCase() +
-          action.replace("edit_", "").slice(1)
-        }`
-      ]
+      messages[`enter${field.charAt(0).toUpperCase() + field.slice(1)}`]
     );
-    await session.save();
+    await session.save(); // Сохранение сессии после изменения шага
   }
 });
 
