@@ -170,8 +170,8 @@ bot.on("callback_query:data", async (ctx) => {
     }
   } else if (action === "rubles" || action === "euros") {
     const paymentId = generateUniqueId();
-    session.paymentId = paymentId;
     const priceId = await createPrice();
+    session.paymentId = paymentId;
     session.priceId = priceId;
 
     await session.save(); // Сохранение сессии после генерации paymentId
