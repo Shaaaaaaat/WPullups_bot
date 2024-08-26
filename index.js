@@ -95,6 +95,13 @@ bot.command("start", async (ctx) => {
   });
 });
 
+// Обработчик команды /operator
+bot.command("operator", async (ctx) => {
+  await ctx.reply(
+    "Если у вас остались вопросы, вы можете написать нашему менеджеру Никите: @IDC_Manager, он подскажет 😉"
+  );
+});
+
 // Обработчик для callback_query, связанных с действиями
 bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
