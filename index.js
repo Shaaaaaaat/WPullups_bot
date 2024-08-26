@@ -3,6 +3,7 @@ const { Bot, InlineKeyboard } = require("grammy");
 const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const stripe = require("stripe")(process.env.STRIPE_KEY); // Добавьте эту строку
 const fs = require("fs");
 const axios = require("axios");
 const connectDB = require("./database");
@@ -40,6 +41,31 @@ function generatePaymentLink(paymentId, amount, email) {
   return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
     email
   )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
+}
+
+// Функция для создания объекта Price
+async function createPrice() {
+  const price = await stripe.prices.create({
+    unit_amount: 900, // 9 евро в центах
+    currency: "eur",
+    product_data: {
+      name: "Webinar Registration",
+    },
+  });
+  return price.id;
+}
+
+// Функция для создания ссылки на оплату
+async function createPaymentLink(priceId) {
+  const paymentLink = await stripe.paymentLinks.create({
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+  });
+  return paymentLink.url;
 }
 
 // Функция для отправки данных в Airtable
@@ -146,14 +172,23 @@ bot.on("callback_query:data", async (ctx) => {
     session.paymentId = paymentId;
     await session.save(); // Сохранение сессии после генерации paymentId
 
-    const paymentLink = generatePaymentLink(paymentId, 3, session.email);
-
     if (action === "rubles") {
+      const paymentLink = generatePaymentLink(paymentId, 3, session.email);
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
-    } else {
-      await ctx.reply(messages.paymentLinkEuros);
+    } else if (action === "euros") {
+      try {
+        const priceId = await createPrice();
+        const paymentLink = await createPaymentLink(priceId);
+        await ctx.reply(
+          `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
+        );
+      } catch (error) {
+        await ctx.reply(
+          "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
+        );
+      }
     }
 
     // Отправьте данные в Airtable с inv_id
@@ -168,13 +203,6 @@ bot.on("callback_query:data", async (ctx) => {
     // Очистите сессию после отправки данных в Airtable
     session.step = "completed";
     await session.save(); // Сохранение сессии после завершения
-  } else if (action.startsWith("edit_")) {
-    const field = action.replace("edit_", "");
-    session.step = `awaiting_edit_${field}`;
-    await ctx.reply(
-      messages[`enter${field.charAt(0).toUpperCase() + field.slice(1)}`]
-    );
-    await session.save(); // Сохранение сессии после изменения шага
   }
 });
 
