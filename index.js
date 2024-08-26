@@ -175,7 +175,7 @@ bot.on("callback_query:data", async (ctx) => {
     session.newPrice = paymentLink.slice(22);
     session.paymentId = paymentId;
     console.log(paymentId);
-    console.log(newPrice);
+    console.log(paymentLink.slice(22));
 
     await session.save(); // Сохранение сессии после генерации paymentId
 
