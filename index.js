@@ -169,7 +169,7 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (action === "rubles" || action === "euros") {
-    const paymentId = generateUniqueId();
+    const paymentId = await generateUniqueId();
     const priceId = await createPrice();
     session.paymentId = paymentId;
     session.priceId = priceId;
