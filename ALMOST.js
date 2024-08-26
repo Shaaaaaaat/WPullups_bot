@@ -207,6 +207,17 @@ bot.on("callback_query:data", async (ctx) => {
     // Очистите сессию после отправки данных в Airtable
     session.step = "completed";
     await session.save(); // Сохранение сессии после завершения
+  } else if (action.startsWith("edit_")) {
+    session.step = `awaiting_edit_${action.replace("edit_", "")}`;
+    await ctx.reply(
+      messages[
+        `enter${
+          action.replace("edit_", "").charAt(0).toUpperCase() +
+          action.replace("edit_", "").slice(1)
+        }`
+      ]
+    );
+    await session.save(); // Сохранение сессии после изменения шага
   }
 });
 
