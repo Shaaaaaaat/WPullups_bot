@@ -3,6 +3,7 @@ const { Bot, InlineKeyboard } = require("grammy");
 const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const stripe = require("stripe")(process.env.STRIPE_KEY); // Добавьте эту строку
 const fs = require("fs");
 const axios = require("axios");
 const connectDB = require("./database");
@@ -42,8 +43,33 @@ function generatePaymentLink(paymentId, amount, email) {
   )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
+// Функция для создания объекта Price
+async function createPrice() {
+  const price = await stripe.prices.create({
+    unit_amount: 900, // 9 евро в центах
+    currency: "eur",
+    product_data: {
+      name: "Webinar Registration",
+    },
+  });
+  return price.id;
+}
+
+// Функция для создания ссылки на оплату
+async function createPaymentLink(priceId) {
+  const paymentLink = await stripe.paymentLinks.create({
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+  });
+  return paymentLink.url;
+}
+
 // Функция для отправки данных в Airtable
-async function sendToAirtable(name, email, phone, tgId, invId) {
+async function sendToAirtable(name, email, phone, tgId, invId, prId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
@@ -62,6 +88,7 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
       tgId: tgId,
       Tag: "Webinar",
       inv_id: invId, // Добавляем inv_id
+      price_id: prId,
     },
   };
 
@@ -93,6 +120,13 @@ bot.command("start", async (ctx) => {
       .row()
       .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" }),
   });
+});
+
+// Обработчик команды /operator
+bot.command("operator", async (ctx) => {
+  await ctx.reply(
+    "Если у вас остались вопросы, вы можете написать нашему менеджеру Никите: @IDC_Manager, он подскажет 😉"
+  );
 });
 
 // Обработчик для callback_query, связанных с действиями
@@ -135,18 +169,29 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (action === "rubles" || action === "euros") {
-    const paymentId = generateUniqueId();
+    const paymentId = await generateUniqueId();
+    const priceId = await createPrice();
+    const paymentLink = await createPaymentLink(priceId);
+    session.newPrice = paymentLink.slice(23);
     session.paymentId = paymentId;
+
     await session.save(); // Сохранение сессии после генерации paymentId
 
-    const paymentLink = generatePaymentLink(paymentId, 3, session.email);
-
     if (action === "rubles") {
+      const paymentLink = generatePaymentLink(paymentId, 3, session.email);
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
-    } else {
-      await ctx.reply(messages.paymentLinkEuros);
+    } else if (action === "euros") {
+      try {
+        await ctx.reply(
+          `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
+        );
+      } catch (error) {
+        await ctx.reply(
+          "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
+        );
+      }
     }
 
     // Отправьте данные в Airtable с inv_id
@@ -155,7 +200,8 @@ bot.on("callback_query:data", async (ctx) => {
       session.email,
       session.phone,
       ctx.from.id,
-      paymentId // Передаем inv_id
+      session.paymentId, // Передаем inv_id
+      session.newPrice
     );
 
     // Очистите сессию после отправки данных в Airtable
