@@ -178,7 +178,7 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save(); // Сохранение сессии после генерации paymentId
 
     if (action === "rubles") {
-      const paymentLink = generatePaymentLink(paymentId, 3, session.email);
+      const paymentLink = generatePaymentLink(paymentId, 900, session.email);
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
