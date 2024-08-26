@@ -88,6 +88,7 @@ async function sendToAirtable(name, email, phone, tgId, invId) {
       tgId: tgId,
       Tag: "Webinar",
       inv_id: invId, // Добавляем inv_id
+      price_id: prcieId,
     },
   };
 
@@ -168,6 +169,8 @@ bot.on("callback_query:data", async (ctx) => {
       await session.save(); // Сохранение сессии после изменения шага
     }
   } else if (action === "rubles" || action === "euros") {
+    await session.save(); // Сохранение сессии после генерации paymentId
+
     if (action === "rubles") {
       const paymentLink = generatePaymentLink(paymentId, 3, session.email);
       const paymentId = generateUniqueId();
@@ -179,8 +182,7 @@ bot.on("callback_query:data", async (ctx) => {
       try {
         const priceId = await createPrice();
         const paymentLink = await createPaymentLink(priceId);
-        const paymentId = priceId;
-        session.paymentId = paymentId;
+        session.priceId = priceId;
         await ctx.reply(
           `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
         );
@@ -197,7 +199,8 @@ bot.on("callback_query:data", async (ctx) => {
       session.email,
       session.phone,
       ctx.from.id,
-      paymentId // Передаем inv_id
+      paymentId, // Передаем inv_id
+      priceId
     );
 
     // Очистите сессию после отправки данных в Airtable
