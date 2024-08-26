@@ -173,6 +173,7 @@ bot.on("callback_query:data", async (ctx) => {
     const priceId = await createPrice();
     session.paymentId = paymentId;
     session.priceId = priceId;
+    console.log(paymentId);
     console.log(priceId);
 
     await session.save(); // Сохранение сессии после генерации paymentId
