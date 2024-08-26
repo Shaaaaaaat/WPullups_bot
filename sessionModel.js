@@ -8,6 +8,7 @@ const sessionSchema = new mongoose.Schema({
   step: { type: String, default: "" },
   paymentStatus: { type: String, default: "" },
   paymentId: { type: String, default: "", index: true }, // Индекс для быстрого поиска
+  priceId: { type: String, default: "", index: true },
 });
 
 const Session = mongoose.model("Session", sessionSchema);
