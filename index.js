@@ -46,7 +46,7 @@ function generatePaymentLink(paymentId, amount, email) {
 // Функция для создания объекта Price
 async function createPrice() {
   const price = await stripe.prices.create({
-    unit_amount: 900, // 9 евро в центах
+    unit_amount: 700, // 7 евро в центах
     currency: "eur",
     product_data: {
       name: "Webinar Registration",
@@ -162,8 +162,8 @@ bot.on("callback_query:data", async (ctx) => {
     if (session.step === "awaiting_confirmation") {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (900₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (9€)", callback_data: "euros" }),
+          .add({ text: "Российская (700₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (7€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save(); // Сохранение сессии после изменения шага
@@ -178,7 +178,7 @@ bot.on("callback_query:data", async (ctx) => {
     await session.save(); // Сохранение сессии после генерации paymentId
 
     if (action === "rubles") {
-      const paymentLink = generatePaymentLink(paymentId, 900, session.email);
+      const paymentLink = generatePaymentLink(paymentId, 700, session.email);
       await ctx.reply(
         `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
       );
@@ -260,8 +260,8 @@ bot.on("message:text", async (ctx) => {
     if (ctx.message.text === "Все верно") {
       await ctx.reply("Выберите тип карты для оплаты:", {
         reply_markup: new InlineKeyboard()
-          .add({ text: "Российская (900₽)", callback_data: "rubles" })
-          .add({ text: "Зарубежная (9€)", callback_data: "euros" }),
+          .add({ text: "Российская (700₽)", callback_data: "rubles" })
+          .add({ text: "Зарубежная (7€)", callback_data: "euros" }),
       });
       session.step = "awaiting_payment_type";
       await session.save(); // Сохранение сессии после изменения шага
