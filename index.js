@@ -341,6 +341,15 @@ app.use(bodyParser.json()); // Используем JSON для обработк
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
+  const user = ctx.from;
+  console.log("Новый пользователь:");
+  console.log(`ID: ${user.id}`);
+  console.log(`Имя: ${user.first_name}`);
+  console.log(`Фамилия: ${user.last_name || "не указана"}`);
+  console.log(`Ник: ${user.username || "не указан"}`);
+
+  console.log(`Команда /start от пользователя: ${user.id}`);
+
   const tgId = ctx.from.id; // Сохранение tgId пользователя
 
   // Проверка наличия пользователя в Airtable
@@ -432,6 +441,7 @@ bot.on("message:text", async (ctx) => {
         });
         break;
       case "/operator":
+        console.log("Нажал /operator");
         await ctx.reply(
           "Если у вас остались вопросы, вы можете написать нашему менеджеру Никите: @IDC_Manager, он подскажет 😉"
         );
@@ -513,6 +523,7 @@ bot.on("message:text", async (ctx) => {
       );
     }
   } else if (text === "узнать баланс") {
+    console.log("Нажал кнопку Узнать баланс");
     const tgId = ctx.from.id;
     const result = await getUserBalanceAndCurrency(tgId);
 
