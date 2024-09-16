@@ -1,25 +1,185 @@
 require("dotenv").config();
-const { Bot, InlineKeyboard } = require("grammy");
+const { Bot, InlineKeyboard, Keyboard } = require("grammy");
 const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
-const stripe = require("stripe")(process.env.STRIPE_KEY); // Добавьте эту строку
-const fs = require("fs");
 const axios = require("axios");
-const connectDB = require("./database");
-const Session = require("./sessionModel");
+
+const actionData = {
+  buy_13200_msc_ycg: { sum: 13200, lessons: 12, tag: "MSC_group_YCG" },
+  buy_1400_msc_ycg: { sum: 1400, lessons: 1, tag: "MSC_group_YCG" },
+  buy_3600_personal_mscycg: { sum: 3600, lessons: 1, tag: "MSC_personal_YCG" },
+  buy_32400_personal_mscycg: {
+    sum: 32400,
+    lessons: 10,
+    tag: "MSC_personal_YCG",
+  },
+  buy_11400_spb_spi: { sum: 11400, lessons: 12, tag: "SPB_group_SPI" },
+  buy_9600_spb_spi: { sum: 9600, lessons: 12, tag: "SPB_group_SPI" },
+  buy_1100_spb_spi: { sum: 1100, lessons: 1, tag: "SPB_group_SPI" },
+  buy_3600_personal_spbspi: { sum: 3600, lessons: 1, tag: "SPB_personal_SPI" },
+  buy_32400_personal_spbspi: {
+    sum: 32400,
+    lessons: 10,
+    tag: "SPB_personal_SPI",
+  },
+  buy_11400_spb_rtc: { sum: 11400, lessons: 12, tag: "SPB_group_RTC" },
+  buy_9600_spb_rtc: { sum: 9600, lessons: 12, tag: "SPB_group_RTC" },
+  buy_1100_spb_rtc: { sum: 1100, lessons: 1, tag: "SPB_group_RTC" },
+  buy_3600_personal_spbrtc: { sum: 3600, lessons: 1, tag: "SPB_personal_RTC" },
+  buy_32400_personal_spbrtc: {
+    sum: 32400,
+    lessons: 10,
+    tag: "SPB_personal_RTC",
+  },
+  buy_11400_spb_hkc: { sum: 11400, lessons: 12, tag: "SPB_group_HKC" },
+  buy_9600_spb_hkc: { sum: 9600, lessons: 12, tag: "SPB_group_HKC" },
+  buy_1100_spb_hkc: { sum: 1100, lessons: 1, tag: "SPB_group_HKC" },
+  buy_3600_personal_spbhkc: { sum: 3600, lessons: 1, tag: "SPB_personal_HKC" },
+  buy_32400_personal_spbhkc: {
+    sum: 32400,
+    lessons: 10,
+    tag: "SPB_personal_HKC",
+  },
+  buy_9600_ds: { sum: 9600, lessons: 12, tag: "ds" },
+  buy_23400_ds: { sum: 23400, lessons: 36, tag: "ds" },
+};
+
+// Объект с данными для различных типов кнопок
+const buttonsData = {
+  group: {
+    MSCYCG: [
+      {
+        text: "12 занятий (13 200₽) — действует 6 недель",
+        callback_data: "buy_13200_msc_ycg",
+      },
+      {
+        text: "1 занятие (1 400₽) — действует 4 недели",
+        callback_data: "buy_1400_msc_ycg",
+      },
+    ],
+    SPBSPI: [
+      {
+        text: "12 занятий (11 400₽) — действует 6 недель",
+        callback_data: "buy_11400_spb_spi",
+      },
+      {
+        text: "12 занятий (9 600₽) — действует 4 недели",
+        callback_data: "buy_9600_spb_spi",
+      },
+      {
+        text: "1 занятие (1 100₽) — действует 4 недели",
+        callback_data: "buy_1100_spb_spi",
+      },
+    ],
+    SPBRTC: [
+      {
+        text: "12 занятий (11 400₽) — действует 6 недель",
+        callback_data: "buy_11400_spb_rtc",
+      },
+      {
+        text: "12 занятий (9 600₽) — действует 4 недели",
+        callback_data: "buy_9600_spb_rtc",
+      },
+      {
+        text: "1 занятие (1 100₽) — действует 4 недели",
+        callback_data: "buy_1100_spb_rtc",
+      },
+    ],
+    SPBHKC: [
+      {
+        text: "12 занятий (11 400₽) — действует 6 недель",
+        callback_data: "buy_11400_spb_hkc",
+      },
+      {
+        text: "12 занятий (9 600₽) — действует 4 недели",
+        callback_data: "buy_9600_spb_hkc",
+      },
+      {
+        text: "1 занятие (1 100₽) — действует 4 недели",
+        callback_data: "buy_1100_spb_hkc",
+      },
+    ],
+  },
+  personal: {
+    MSCYCG: [
+      {
+        text: "10 занятий (32 400₽) — действует 6 недель",
+        callback_data: "buy_32400_personal_mscycg",
+      },
+      {
+        text: "1 занятие (3 600₽) — действует 4 недели",
+        callback_data: "buy_3600_personal_mscycg",
+      },
+    ],
+    SPBSPI: [
+      {
+        text: "10 занятий (32 400₽) — действует 6 недель",
+        callback_data: "buy_32400_personal_spbspi",
+      },
+      {
+        text: "1 занятие (3 600₽) — действует 4 недели",
+        callback_data: "buy_3600_personal_spbspi",
+      },
+    ],
+    SPBRTC: [
+      {
+        text: "10 занятий (32 400₽) — действует 6 недель",
+        callback_data: "buy_32400_personal_spbrtc",
+      },
+      {
+        text: "1 занятие (3 600₽) — действует 4 недели",
+        callback_data: "buy_3600_personal_spbrtc",
+      },
+    ],
+    SPBHKC: [
+      {
+        text: "10 занятий (32 400₽) — действует 6 недель",
+        callback_data: "buy_32400_personal_spbhkc",
+      },
+      {
+        text: "1 занятие (3 600₽) — действует 4 недели",
+        callback_data: "buy_3600_personal_spbhkc",
+      },
+    ],
+  },
+  ds: [
+    {
+      text: "12 занятий (9 600₽) — действует 6 недель",
+      callback_data: "buy_9600_ds",
+    },
+    {
+      text: "36 занятий (23 400₽) — действует 14 недель",
+      callback_data: "buy_23400_ds",
+    },
+  ],
+};
 
 // Создаем экземпляр бота
 const bot = new Bot(process.env.BOT_API_KEY); // Ваш API ключ от Telegram бота
 
-// Подключаемся к MongoDB
-connectDB();
+// Функция для проверки наличия пользователя в Airtable
+async function checkUserInAirtable(tgId) {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const tableId = process.env.AIRTABLE_TABLE_ID;
 
-// Функция для загрузки сообщений из JSON-файла
-const loadMessages = () => {
-  return JSON.parse(fs.readFileSync("messages.json", "utf8"));
-};
-const messages = loadMessages();
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}?filterByFormula={tgId}='${tgId}'`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  try {
+    const response = await axios.get(url, { headers });
+    return response.data.records.length > 0; // Если записи найдены, возвращаем true
+  } catch (error) {
+    console.error(
+      "Error checking user in Airtable:",
+      error.response ? error.response.data : error.message
+    );
+    return false; // В случае ошибки также возвращаем false
+  }
+}
 
 // Функция для генерации уникального ID в допустимом диапазоне
 function generateUniqueId() {
@@ -29,52 +189,92 @@ function generateUniqueId() {
 }
 
 // Функция для генерации ссылки на оплату
-function generatePaymentLink(paymentId, amount, email) {
+function generatePaymentLink(paymentId, sum, email) {
   const shopId = process.env.ROBO_ID; // Логин вашего магазина в Робокассе
   const secretKey1 = process.env.ROBO_SECRET1; // Secret Key 1 для формирования подписи
 
   const signature = crypto
     .createHash("md5")
-    .update(`${shopId}:${amount}:${paymentId}:${secretKey1}`)
+    .update(`${shopId}:${sum}:${paymentId}:${secretKey1}`)
     .digest("hex");
 
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${amount}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
+  return `https://auth.robokassa.ru/Merchant/Index.aspx?MerchantLogin=${shopId}&OutSum=${sum}&InvId=${paymentId}&SignatureValue=${signature}&Email=${encodeURIComponent(
     email
   )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
-// Функция для создания объекта Price
-async function createPrice() {
-  const price = await stripe.prices.create({
-    unit_amount: 1000, // 10 евро в центах
-    currency: "eur",
-    product_data: {
-      name: "Webinar Registration",
-    },
-  });
-  return price.id;
-}
-
-// Функция для создания ссылки на оплату
-async function createPaymentLink(priceId) {
-  const paymentLink = await stripe.paymentLinks.create({
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-  });
-  return paymentLink.url;
-}
-
-// Функция для отправки данных в Airtable
-async function sendToAirtable(name, email, phone, tgId, invId, prId) {
+// Функция для получения информации о пользователе из Airtable
+async function getUserInfo(tgId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableId = process.env.AIRTABLE_TABLE_ID;
 
-  const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}?filterByFormula={tgId}='${tgId}'`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  try {
+    const response = await axios.get(url, { headers });
+    const records = response.data.records;
+
+    if (records.length > 0) {
+      const email = records[0].fields.email || "нет email"; // Если email отсутствует, выводим сообщение
+      const tag = records[0].fields.Tag || "неизвестен"; // Если тег отсутствует, выводим "неизвестен"
+      return { email, tag };
+    } else {
+      return null; // Если запись не найдена, возвращаем null
+    }
+  } catch (error) {
+    console.error(
+      "Error fetching user info from Airtable:",
+      error.response ? error.response.data : error.message
+    );
+    return null; // В случае ошибки возвращаем null
+  }
+}
+
+// Функция для получения баланса и валюты из Airtable
+async function getUserBalanceAndCurrency(tgId) {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const tableId = process.env.AIRTABLE_TABLE_ID;
+
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}?filterByFormula={tgId}='${tgId}'`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  try {
+    const response = await axios.get(url, { headers });
+    const records = response.data.records;
+
+    if (records.length > 0) {
+      const balance =
+        records[0].fields.Balance !== undefined
+          ? records[0].fields.Balance
+          : "0";
+      const currency = records[0].fields.Currency || "неизвестна"; // Если валюты нет, выводим "неизвестна"
+      return { balance, currency };
+    } else {
+      return null; // Если запись не найдена, возвращаем null
+    }
+  } catch (error) {
+    console.error(
+      "Error fetching user balance and currency from Airtable:",
+      error.response ? error.response.data : error.message
+    );
+    return null; // В случае ошибки возвращаем null
+  }
+}
+
+// Функция для отправки данных в Airtable
+async function sendToAirtable(tgId, invId, sum, lessons, tag) {
+  const apiKey = process.env.AIRTABLE_API_KEY;
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const purchasId = process.env.AIRTABLE_PURCHAS_ID;
+
+  const url = `https://api.airtable.com/v0/${baseId}/${purchasId}`;
   const headers = {
     Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json",
@@ -82,13 +282,11 @@ async function sendToAirtable(name, email, phone, tgId, invId, prId) {
 
   const data = {
     fields: {
-      FIO: name,
-      email: email,
-      Phone: phone,
       tgId: tgId,
-      Tag: "Webinar",
-      inv_id: invId, // Добавляем inv_id
-      price_id: prId,
+      inv_id: invId,
+      Sum: sum,
+      Lessons: lessons,
+      Tag: tag,
     },
   };
 
@@ -102,232 +300,252 @@ async function sendToAirtable(name, email, phone, tgId, invId, prId) {
   }
 }
 
+// Функция для генерации клавиатуры на основе тега пользователя
+function generateKeyboard(tag) {
+  let keyboard = new InlineKeyboard();
+  if (tag === "MSC_group_YCG") {
+    buttonsData.group.MSCYCG.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "SPB_group_SPI") {
+    buttonsData.group.SPBSPI.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "SPB_group_RTC") {
+    buttonsData.group.SPBRTC.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "SPB_group_HKC") {
+    buttonsData.group.SPBHKC.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "MSC_personal_YCG") {
+    buttonsData.personal.MSCYCG.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "SPB_personal_SPI") {
+    buttonsData.personal.SPBSPI.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "SPB_personal_RTC") {
+    buttonsData.personal.SPBRTC.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "SPB_personal_HKC") {
+    buttonsData.personal.SPBHKC.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "ds") {
+    buttonsData.ds.forEach((button) => keyboard.add(button).row());
+  } else {
+    // Если тег не распознан, возвращаем null
+    return null;
+  }
+  return keyboard;
+}
+
 // Создаем и настраиваем Express-приложение
 const app = express();
 app.use(bodyParser.json()); // Используем JSON для обработки запросов от Telegram и Робокассы
 
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
-  try {
-    await Session.findOneAndUpdate(
-      { userId: ctx.from.id.toString() },
-      { userId: ctx.from.id.toString(), step: "start" },
-      { upsert: true }
-    );
+  const tgId = ctx.from.id; // Сохранение tgId пользователя
 
-    await ctx.reply(messages.start, {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Записаться на вебинар", callback_data: "register" })
-        .row()
-        .add({ text: "Узнать, что будет на вебинаре", callback_data: "info" }),
-    });
-  } catch (error) {
-    if (error instanceof GrammyError && error.error_code === 403) {
-      console.log(`Пользователь заблокировал бота: ${ctx.from.id}`);
-    } else {
-      console.error("Произошла ошибка:", error);
-    }
-  }
-});
+  // Проверка наличия пользователя в Airtable
+  const userExists = await checkUserInAirtable(tgId);
 
-// Обработчик команды /operator
-bot.command("operator", async (ctx) => {
-  try {
+  if (!userExists) {
+    // Если пользователя нет в базе, отправляем сообщение об отказе в доступе
     await ctx.reply(
-      "Если у вас остались вопросы, вы можете написать нашему менеджеру Никите: @IDC_Manager, он подскажет 😉"
+      "Извините, доступ закрыт. Обратитесь, пожалуйста, к нашему менеджеру за поддержкой: @IDC_Manager"
     );
-  } catch (error) {
-    if (error instanceof GrammyError && error.error_code === 403) {
-      console.log(`Пользователь заблокировал бота: ${ctx.from.id}`);
-    } else {
-      console.error("Произошла ошибка:", error);
-    }
+    return; // Завершаем выполнение команды
   }
-});
 
-// Обработчик для callback_query, связанных с действиями
-bot.on("callback_query:data", async (ctx) => {
+  // Если пользователь найден, продолжаем выполнение команды start
   try {
-    const action = ctx.callbackQuery.data;
-    const session = await Session.findOne({ userId: ctx.from.id.toString() });
+    const userInfo = await getUserInfo(tgId);
+    if (userInfo) {
+      const { tag } = userInfo;
 
-    if (action === "register") {
-      await ctx.reply(messages.enterName);
-      session.step = "awaiting_name";
-      await session.save(); // Сохранение сессии после изменения шага
-    } else if (action === "info") {
-      await ctx.reply(messages.webinarInfo, {
-        reply_markup: new InlineKeyboard().add({
-          text: "Записаться на вебинар",
-          callback_data: "register_from_info",
-        }),
-      });
-    } else if (action === "register_from_info") {
-      await ctx.reply(messages.enterName);
-      session.step = "awaiting_name";
-      await session.save(); // Сохранение сессии после изменения шага
-    } else if (action === "edit_info") {
-      await ctx.reply(messages.editChoice, {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "ФИ", callback_data: "edit_name" })
-          .add({ text: "Телефон", callback_data: "edit_phone" })
-          .add({ text: "E-mail", callback_data: "edit_email" }),
-      });
-      session.step = "awaiting_edit";
-      await session.save(); // Сохранение сессии после изменения шага
-    } else if (action === "confirm_payment") {
-      if (session.step === "awaiting_confirmation") {
-        await ctx.reply("Выберите тип карты для оплаты:", {
-          reply_markup: new InlineKeyboard()
-            .add({ text: "Российская (990₽)", callback_data: "rubles" })
-            .add({ text: "Зарубежная (10€)", callback_data: "euros" }),
+      if (tag.includes("ds")) {
+        const keyboard = new Keyboard()
+          .text("Узнать баланс")
+          .text("Купить онлайн тренировки");
+        await ctx.reply("Привет! Выберите, что вас интересует:", {
+          reply_markup: { keyboard: keyboard.build(), resize_keyboard: true },
         });
-        session.step = "awaiting_payment_type";
-        await session.save(); // Сохранение сессии после изменения шага
+      } else if (tag.includes("group")) {
+        const keyboard = new Keyboard()
+          .text("Узнать баланс")
+          .text("Купить групповые тренировки");
+        await ctx.reply("Привет! Выберите, что вас интересует:", {
+          reply_markup: { keyboard: keyboard.build(), resize_keyboard: true },
+        });
+      } else if (tag.includes("personal")) {
+        const keyboard = new Keyboard()
+          .text("Узнать баланс")
+          .text("Купить персональные тренировки");
+        await ctx.reply("Привет! Выберите, что вас интересует:", {
+          reply_markup: { keyboard: keyboard.build(), resize_keyboard: true },
+        });
       }
-    } else if (action === "rubles" || action === "euros") {
-      const paymentId = await generateUniqueId();
-      const priceId = await createPrice();
-      const paymentLink = await createPaymentLink(priceId);
-      session.newPrice = paymentLink.slice(23);
-      session.paymentId = paymentId;
-
-      await session.save(); // Сохранение сессии после генерации paymentId
-
-      if (action === "rubles") {
-        const paymentLink = generatePaymentLink(paymentId, 990, session.email);
-        await ctx.reply(
-          `Отправляю ссылку для оплаты в рублях. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-        );
-      } else if (action === "euros") {
-        try {
-          await ctx.reply(
-            `Отправляю ссылку для оплаты в евро. Пройдите, пожалуйста, по ссылке: ${paymentLink}`
-          );
-        } catch (error) {
-          await ctx.reply(
-            "Произошла ошибка при создании ссылки для оплаты. Попробуйте снова позже."
-          );
-        }
-      }
-
-      // Отправьте данные в Airtable с inv_id
-      await sendToAirtable(
-        session.name,
-        session.email,
-        session.phone,
-        ctx.from.id,
-        session.paymentId, // Передаем inv_id
-        session.newPrice
-      );
-
-      // Очистите сессию после отправки данных в Airtable
-      session.step = "completed";
-      await session.save(); // Сохранение сессии после завершения
-    } else if (action.startsWith("edit_")) {
-      session.step = `awaiting_edit_${action.replace("edit_", "")}`;
-      await ctx.reply(
-        messages[
-          `enter${
-            action.replace("edit_", "").charAt(0).toUpperCase() +
-            action.replace("edit_", "").slice(1)
-          }`
-        ]
-      );
-      await session.save(); // Сохранение сессии после изменения шага
     }
   } catch (error) {
-    if (error instanceof GrammyError && error.error_code === 403) {
-      console.log(`Пользователь заблокировал бота: ${ctx.from.id}`);
-    } else {
-      console.error("Произошла ошибка:", error);
-    }
+    console.error("Произошла ошибка:", error);
   }
 });
 
-// Обработчик для ввода данных
+// Обработчик для текстовых сообщений и команд
 bot.on("message:text", async (ctx) => {
-  try {
-    const session = await Session.findOne({ userId: ctx.from.id.toString() });
+  const text = ctx.message.text.trim().toLowerCase();
 
-    if (session.step === "awaiting_name") {
-      session.name = ctx.message.text;
-      await ctx.reply(messages.enterPhone);
-      session.step = "awaiting_phone";
-      await session.save(); // Сохранение сессии после изменения шага
-    } else if (session.step === "awaiting_phone") {
-      const phone = ctx.message.text;
-      if (/^\+\d+$/.test(phone)) {
-        session.phone = phone;
-        await ctx.reply(messages.enterEmail);
-        session.step = "awaiting_email";
-        await session.save(); // Сохранение сессии после изменения шага
-      } else {
-        await ctx.reply(messages.invalidPhone);
-      }
-    } else if (session.step === "awaiting_email") {
-      session.email = ctx.message.text;
-      const confirmationMessage = messages.confirmation
-        .replace("{{ $ФИ }}", session.name)
-        .replace("{{ $Tel }}", session.phone)
-        .replace("{{ $email }}", session.email);
-
-      await ctx.reply(confirmationMessage, {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "Все верно", callback_data: "confirm_payment" })
-          .row()
-          .add({ text: "Изменить", callback_data: "edit_info" }),
-      });
-
-      session.step = "awaiting_confirmation";
-      await session.save(); // Сохранение сессии после изменения шага
-    } else if (session.step === "awaiting_confirmation") {
-      if (ctx.message.text === "Все верно") {
-        await ctx.reply("Выберите тип карты для оплаты:", {
-          reply_markup: new InlineKeyboard()
-            .add({ text: "Российская (990₽)", callback_data: "rubles" })
-            .add({ text: "Зарубежная (10€)", callback_data: "euros" }),
+  // Если сообщение начинается с '/', это команда, и мы её обрабатываем отдельно
+  if (text.startsWith("/")) {
+    switch (text) {
+      case "/group":
+        await ctx.reply("Переключено на групповые тренировки.", {
+          reply_markup: {
+            keyboard: new Keyboard()
+              .text("Узнать баланс")
+              .text("Купить групповые тренировки")
+              .build(),
+            resize_keyboard: true,
+          },
         });
-        session.step = "awaiting_payment_type";
-        await session.save(); // Сохранение сессии после изменения шага
-      }
-    } else if (session.step.startsWith("awaiting_edit_")) {
-      const field = session.step.replace("awaiting_edit_", "");
-      if (field === "name") {
-        session.name = ctx.message.text;
-      } else if (field === "phone") {
-        const phone = ctx.message.text;
-        if (/^\+\d+$/.test(phone)) {
-          session.phone = phone;
-        } else {
-          await ctx.reply(messages.invalidPhone);
-          return;
-        }
-      } else if (field === "email") {
-        session.email = ctx.message.text;
-      }
-
-      const confirmationMessage = messages.confirmation
-        .replace("{{ $ФИ }}", session.name)
-        .replace("{{ $Tel }}", session.phone)
-        .replace("{{ $email }}", session.email);
-
-      await ctx.reply(confirmationMessage, {
-        reply_markup: new InlineKeyboard()
-          .add({ text: "Все верно", callback_data: "confirm_payment" })
-          .row()
-          .add({ text: "Изменить", callback_data: "edit_info" }),
-      });
-
-      session.step = "awaiting_confirmation";
-      await session.save(); // Сохранение сессии после изменения шага
+        break;
+      case "/personal":
+        await ctx.reply("Переключено на персональные тренировки.", {
+          reply_markup: {
+            keyboard: new Keyboard()
+              .text("Узнать баланс")
+              .text("Купить персональные тренировки")
+              .build(),
+            resize_keyboard: true,
+          },
+        });
+        break;
+      case "/online":
+        await ctx.reply("Переключено на онлайн тренировки.", {
+          reply_markup: {
+            keyboard: new Keyboard()
+              .text("Узнать баланс")
+              .text("Купить онлайн тренировки")
+              .build(),
+            resize_keyboard: true,
+          },
+        });
+        break;
+      case "/operator":
+        await ctx.reply(
+          "Если у вас остались вопросы, вы можете написать нашему менеджеру Никите: @IDC_Manager, он подскажет 😉"
+        );
+        break;
+      default:
+        await ctx.reply("Неизвестная команда. Попробуйте снова.");
     }
-  } catch (error) {
-    if (error instanceof GrammyError && error.error_code === 403) {
-      console.log(`Пользователь заблокировал бота: ${ctx.from.id}`);
+    return; // Завершаем обработку, чтобы не продолжать ниже
+  }
+
+  // Обработчик для кнопки "Купить тренировки"
+  if (text === "купить групповые тренировки") {
+    const tgId = ctx.from.id;
+    const userInfo = await getUserInfo(tgId);
+
+    if (userInfo) {
+      const newString = userInfo.tag
+        .replace("personal", "group")
+        .replace("ds", "dd");
+      const keyboard = generateKeyboard(newString);
+      if (keyboard) {
+        await ctx.reply("Выберите тариф:", {
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.reply(
+          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке."
+        );
+      }
     } else {
-      console.error("Произошла ошибка:", error);
+      await ctx.reply(
+        "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
+      );
     }
+  } else if (text === "купить персональные тренировки") {
+    const tgId = ctx.from.id;
+    const userInfo = await getUserInfo(tgId);
+
+    if (userInfo) {
+      const newString = userInfo.tag
+        .replace("group", "personal")
+        .replace("ds", "dd");
+      const keyboard = generateKeyboard(newString);
+      if (keyboard) {
+        await ctx.reply("Выберите тариф:", {
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.reply(
+          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке."
+        );
+      }
+    } else {
+      await ctx.reply(
+        "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
+      );
+    }
+  } else if (text === "купить онлайн тренировки") {
+    const tgId = ctx.from.id;
+    const userInfo = await getUserInfo(tgId);
+
+    if (userInfo) {
+      const newString = userInfo.tag.replace(userInfo.tag, "ds");
+      const keyboard = generateKeyboard(newString);
+      if (keyboard) {
+        await ctx.reply("Выберите тариф:", {
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.reply(
+          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке @IDC_Manager."
+        );
+      }
+    } else {
+      await ctx.reply(
+        "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
+      );
+    }
+  } else if (text === "узнать баланс") {
+    const tgId = ctx.from.id;
+    const result = await getUserBalanceAndCurrency(tgId);
+
+    if (result !== null) {
+      await ctx.reply(
+        `Ваш текущий баланс: ${result.balance} ${result.currency}`
+      );
+    } else {
+      await ctx.reply(
+        "Не удалось получить информацию о балансе. Пожалуйста, попробуйте позже."
+      );
+    }
+  }
+});
+
+// Обработчик для выбора тренировки и генерации ссылки на оплату
+bot.on("callback_query", async (ctx) => {
+  const action = ctx.callbackQuery.data;
+  const tgId = ctx.from.id;
+
+  const userInfo = await getUserInfo(tgId);
+  if (!userInfo) {
+    await ctx.answerCallbackQuery({
+      text: "Не удалось получить информацию о пользователе.",
+    });
+    return;
+  }
+
+  const { email } = userInfo;
+  const data = actionData[action];
+
+  if (data) {
+    const paymentId = generateUniqueId();
+    const paymentLink = generatePaymentLink(paymentId, data.sum, email);
+
+    await ctx.reply(`Отлично! Перейдите по ссылке для оплаты: ${paymentLink}`);
+
+    // Отправка данных в Airtable с inv_id
+    await sendToAirtable(tgId, paymentId, data.sum, data.lessons, data.tag);
+
+    await ctx.answerCallbackQuery();
+  } else {
+    await ctx.answerCallbackQuery({
+      text: "Неверный выбор. Пожалуйста, попробуйте снова.",
+    });
   }
 });
 
