@@ -5,6 +5,9 @@ const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const axios = require("axios");
 
+// Логируем запуск приложения с информацией о пользователе
+console.log("Приложение запущено");
+
 const actionData = {
   buy_13200_msc_ycg: { sum: 13200, lessons: 12, tag: "MSC_group_YCG" },
   buy_1400_msc_ycg: { sum: 1400, lessons: 1, tag: "MSC_group_YCG" },
@@ -171,6 +174,9 @@ async function checkUserInAirtable(tgId) {
 
   try {
     const response = await axios.get(url, { headers });
+    console.log(
+      `Результат проверки пользователя: ${response.data.records.length > 0}`
+    );
     return response.data.records.length > 0; // Если записи найдены, возвращаем true
   } catch (error) {
     console.error(
@@ -354,6 +360,7 @@ bot.command("start", async (ctx) => {
       const { tag } = userInfo;
 
       if (tag.includes("ds")) {
+        console.log("получил кнопки меню (ds)");
         const keyboard = new Keyboard()
           .text("Узнать баланс")
           .text("Купить онлайн тренировки");
@@ -361,6 +368,7 @@ bot.command("start", async (ctx) => {
           reply_markup: { keyboard: keyboard.build(), resize_keyboard: true },
         });
       } else if (tag.includes("group")) {
+        console.log("получил кнопки меню (group)");
         const keyboard = new Keyboard()
           .text("Узнать баланс")
           .text("Купить групповые тренировки");
@@ -368,6 +376,7 @@ bot.command("start", async (ctx) => {
           reply_markup: { keyboard: keyboard.build(), resize_keyboard: true },
         });
       } else if (tag.includes("personal")) {
+        console.log("получил кнопки меню (personal)");
         const keyboard = new Keyboard()
           .text("Узнать баланс")
           .text("Купить персональные тренировки");
@@ -436,6 +445,7 @@ bot.on("message:text", async (ctx) => {
   if (text === "купить групповые тренировки") {
     const tgId = ctx.from.id;
     const userInfo = await getUserInfo(tgId);
+    console.log("нажал купить групповые тренировки");
 
     if (userInfo) {
       const newString = userInfo.tag
@@ -459,7 +469,7 @@ bot.on("message:text", async (ctx) => {
   } else if (text === "купить персональные тренировки") {
     const tgId = ctx.from.id;
     const userInfo = await getUserInfo(tgId);
-
+    console.log("нажал купить персональные тренировки");
     if (userInfo) {
       const newString = userInfo.tag
         .replace("group", "personal")
@@ -482,6 +492,7 @@ bot.on("message:text", async (ctx) => {
   } else if (text === "купить онлайн тренировки") {
     const tgId = ctx.from.id;
     const userInfo = await getUserInfo(tgId);
+    console.log("нажал купить онлайн тренировки");
 
     if (userInfo) {
       const newString = userInfo.tag.replace(userInfo.tag, "ds");
