@@ -459,7 +459,7 @@ bot.on("message:text", async (ctx) => {
   if (text === "купить групповые тренировки") {
     const tgId = ctx.from.id;
     const userInfo = await getUserInfo(tgId);
-    console.log("нажал купить групповые тренировки");
+    console.log("Нажал купить групповые тренировки");
 
     if (userInfo) {
       const newString = userInfo.tag
@@ -557,7 +557,7 @@ bot.on("callback_query", async (ctx) => {
 
   const { email } = userInfo;
   const data = actionData[action];
-  console.log("Выбрал ${actionData[action]}");
+  console.log(`Выбрал: ${actionData[action]}`);
 
   if (data) {
     const paymentId = generateUniqueId();
