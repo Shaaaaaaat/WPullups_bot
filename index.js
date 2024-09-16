@@ -557,7 +557,6 @@ bot.on("callback_query", async (ctx) => {
 
   const { email } = userInfo;
   const data = actionData[action];
-  console.log(`Выбрал: ${actionData[action]}`);
 
   if (data) {
     const paymentId = generateUniqueId();
