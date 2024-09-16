@@ -309,6 +309,7 @@ async function sendToAirtable(tgId, invId, sum, lessons, tag) {
 // Функция для генерации клавиатуры на основе тега пользователя
 function generateKeyboard(tag) {
   let keyboard = new InlineKeyboard();
+  console.log("Отправляю кнопки для оплаты");
   if (tag === "MSC_group_YCG") {
     buttonsData.group.MSCYCG.forEach((button) => keyboard.add(button).row());
   } else if (tag === "SPB_group_SPI") {
