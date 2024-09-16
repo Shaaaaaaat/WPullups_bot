@@ -408,6 +408,7 @@ bot.on("message:text", async (ctx) => {
   if (text.startsWith("/")) {
     switch (text) {
       case "/group":
+        console.log("Переключил на /group");
         await ctx.reply("Переключено на групповые тренировки.", {
           reply_markup: {
             keyboard: new Keyboard()
@@ -419,6 +420,7 @@ bot.on("message:text", async (ctx) => {
         });
         break;
       case "/personal":
+        console.log("Переключил на /personal");
         await ctx.reply("Переключено на персональные тренировки.", {
           reply_markup: {
             keyboard: new Keyboard()
@@ -430,6 +432,7 @@ bot.on("message:text", async (ctx) => {
         });
         break;
       case "/online":
+        console.log("Переключил на /online");
         await ctx.reply("Переключено на онлайн тренировки.", {
           reply_markup: {
             keyboard: new Keyboard()
@@ -441,7 +444,7 @@ bot.on("message:text", async (ctx) => {
         });
         break;
       case "/operator":
-        console.log("Нажал /operator");
+        console.log("Вызвал /operator");
         await ctx.reply(
           "Если у вас остались вопросы, вы можете написать нашему менеджеру Никите: @IDC_Manager, он подскажет 😉"
         );
@@ -554,11 +557,11 @@ bot.on("callback_query", async (ctx) => {
 
   const { email } = userInfo;
   const data = actionData[action];
+  console.log("Выбрал ${actionData[action]}");
 
   if (data) {
     const paymentId = generateUniqueId();
     const paymentLink = generatePaymentLink(paymentId, data.sum, email);
-
     await ctx.reply(`Отлично! Перейдите по ссылке для оплаты: ${paymentLink}`);
 
     // Отправка данных в Airtable с inv_id
