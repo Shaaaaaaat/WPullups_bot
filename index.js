@@ -63,7 +63,7 @@ const buttonsData = {
         callback_data: "buy_1400_msc_ycg",
       },
       {
-        text: "Пополнить депозит",
+        text: "Пополнить депозит (любая сумма)",
         callback_data: "deposit",
       },
     ],
@@ -81,7 +81,7 @@ const buttonsData = {
         callback_data: "buy_1100_spb_spi",
       },
       {
-        text: "Пополнить депозит",
+        text: "Пополнить депозит (любая сумма)",
         callback_data: "deposit",
       },
     ],
@@ -99,7 +99,7 @@ const buttonsData = {
         callback_data: "buy_1100_spb_rtc",
       },
       {
-        text: "Пополнить депозит",
+        text: "Пополнить депозит (любая сумма)",
         callback_data: "deposit",
       },
     ],
@@ -117,7 +117,7 @@ const buttonsData = {
         callback_data: "buy_1100_spb_hkc",
       },
       {
-        text: "Пополнить депозит",
+        text: "Пополнить депозит (любая сумма)",
         callback_data: "deposit",
       },
     ],
