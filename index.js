@@ -601,7 +601,7 @@ bot.on("message:text", async (ctx) => {
   } else if (text === "узнать баланс") {
     console.log("Нажал кнопку Узнать баланс");
     const tgId = ctx.from.id;
-    const result = await getUserBalanceAndCurrency(tgId);
+    const result = await getUserInfo(tgId);
 
     if (result !== null) {
       await ctx.reply(
