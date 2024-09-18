@@ -255,7 +255,7 @@ async function createStripePrice(amount) {
 }
 
 // Функция для создания ссылки на оплату через Stripe
-async function createStripePaymentLink(priceId) {
+async function createStripePaymentLink(priceId, paymentId) {
   const paymentLink = await stripe.paymentLinks.create({
     line_items: [
       {
@@ -263,6 +263,9 @@ async function createStripePaymentLink(priceId) {
         quantity: 1,
       },
     ],
+    metadata: {
+      paymentId: paymentId, // Передаем идентификатор заказа
+    },
   });
   return paymentLink.url;
 }
@@ -667,8 +670,12 @@ bot.on("callback_query", async (ctx) => {
     await ctx.answerCallbackQuery();
   } else if (dataEur) {
     console.log(dataEur);
+    const paymentId = generateUniqueId();
     const stripePriceId = await createStripePrice(dataEur.sum);
-    const stripePaymentLink = await createStripePaymentLink(stripePriceId);
+    const stripePaymentLink = await createStripePaymentLink(
+      stripePriceId,
+      paymentId
+    );
     await ctx.reply(`Перейдите по ссылке для оплаты: ${stripePaymentLink}`);
 
     await sendToAirtable(tgId, 1, dataEur.sum, dataEur.lessons, dataEur.tag);
