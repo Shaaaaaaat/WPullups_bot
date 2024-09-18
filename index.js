@@ -582,7 +582,7 @@ bot.on("message:text", async (ctx) => {
         );
       }
     } else if (!userInfo.tag.includes("ds_dasha_eur")) {
-      const newString = userInfo.tag.replace(userInfo.tag, "ds");
+      const newString = userInfo.tag.replace(userInfo.tag, "ds_dasha_rub");
       const keyboard = generateKeyboard(newString);
       if (keyboard) {
         await ctx.reply("Выберите тариф:", {
@@ -668,14 +668,8 @@ bot.on("callback_query", async (ctx) => {
     const stripePriceId = await createStripePrice(dataEur.sum);
     const stripePaymentLink = await createStripePaymentLink(stripePriceId);
     await ctx.reply(`Перейдите по ссылке для оплаты: ${stripePaymentLink}`);
-    const paymentId = generateUniqueId();
-    await sendToAirtable(
-      tgId,
-      paymentId,
-      dataEur.sum,
-      dataEur.lessons,
-      dataEur.tag
-    );
+
+    await sendToAirtable(tgId, 1, dataEur.sum, dataEur.lessons, dataEur.tag);
   } else {
     await ctx.answerCallbackQuery({
       text: "Неверный выбор. Пожалуйста, попробуйте снова.",
