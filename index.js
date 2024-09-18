@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const axios = require("axios");
 
+const userState = {};
+
 // Логируем запуск приложения с информацией о пользователе
 console.log("Приложение запущено");
 
@@ -60,6 +62,10 @@ const buttonsData = {
         text: "1 занятие (1 400₽) — действует 4 недели",
         callback_data: "buy_1400_msc_ycg",
       },
+      {
+        text: "Пополнить депозит",
+        callback_data: "deposit",
+      },
     ],
     SPBSPI: [
       {
@@ -73,6 +79,10 @@ const buttonsData = {
       {
         text: "1 занятие (1 100₽) — действует 4 недели",
         callback_data: "buy_1100_spb_spi",
+      },
+      {
+        text: "Пополнить депозит",
+        callback_data: "deposit",
       },
     ],
     SPBRTC: [
@@ -88,6 +98,10 @@ const buttonsData = {
         text: "1 занятие (1 100₽) — действует 4 недели",
         callback_data: "buy_1100_spb_rtc",
       },
+      {
+        text: "Пополнить депозит",
+        callback_data: "deposit",
+      },
     ],
     SPBHKC: [
       {
@@ -101,6 +115,10 @@ const buttonsData = {
       {
         text: "1 занятие (1 100₽) — действует 4 недели",
         callback_data: "buy_1100_spb_hkc",
+      },
+      {
+        text: "Пополнить депозит",
+        callback_data: "deposit",
       },
     ],
   },
@@ -403,6 +421,34 @@ bot.command("start", async (ctx) => {
 // Обработчик для текстовых сообщений и команд
 bot.on("message:text", async (ctx) => {
   const text = ctx.message.text.trim().toLowerCase();
+  const tgId = ctx.from.id;
+
+  // Проверка, ожидает ли бот сумму депозита
+  if (userState[tgId] && userState[tgId].awaitingDeposit) {
+    const sum = parseFloat(text);
+
+    if (isNaN(sum) || sum <= 0) {
+      await ctx.reply("Пожалуйста, введите корректную сумму.");
+      return;
+    }
+    // Получаем информацию о пользователе
+    const userInfo = await getUserInfo(tgId);
+    if (!userInfo) {
+      await ctx.reply("Не удалось получить информацию о пользователе.");
+      return;
+    }
+
+    const paymentId = generateUniqueId();
+    const paymentLink = generatePaymentLink(paymentId, sum, userInfo.email);
+    await ctx.reply(`Отлично! Перейдите по ссылке для оплаты: ${paymentLink}`);
+
+    // Отправляем данные о депозите в Airtable
+    await sendToAirtable(tgId, paymentId, sum, 0, "deposit");
+
+    // Сбрасываем состояние пользователя
+    delete userState[tgId];
+    return;
+  }
 
   // Если сообщение начинается с '/', это команда, и мы её обрабатываем отдельно
   if (text.startsWith("/")) {
@@ -546,6 +592,13 @@ bot.on("message:text", async (ctx) => {
 bot.on("callback_query", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const tgId = ctx.from.id;
+
+  if (action === "deposit") {
+    userState[tgId] = { awaitingDeposit: true };
+    await ctx.reply("Введите сумму депозита:");
+    await ctx.answerCallbackQuery();
+    return;
+  }
 
   const userInfo = await getUserInfo(tgId);
   if (!userInfo) {
