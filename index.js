@@ -654,8 +654,9 @@ bot.on("callback_query", async (ctx) => {
       return obj;
     }, {});
   const data = filteredActionDataRub[action];
-  console.log(dataEur);
+
   if (data) {
+    console.log(data);
     const paymentId = generateUniqueId();
     const paymentLink = generatePaymentLink(paymentId, data.sum, email);
     await ctx.reply(`Отлично! Перейдите по ссылке для оплаты: ${paymentLink}`);
@@ -665,6 +666,7 @@ bot.on("callback_query", async (ctx) => {
 
     await ctx.answerCallbackQuery();
   } else if (dataEur) {
+    console.log(dataEur);
     const stripePriceId = await createStripePrice(dataEur.sum);
     const stripePaymentLink = await createStripePaymentLink(stripePriceId);
     await ctx.reply(`Перейдите по ссылке для оплаты: ${stripePaymentLink}`);
