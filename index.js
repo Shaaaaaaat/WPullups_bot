@@ -571,8 +571,7 @@ bot.on("message:text", async (ctx) => {
     console.log("нажал купить онлайн тренировки");
 
     if (tag === "ds_dasha_eur") {
-      const newString = userInfo;
-      const keyboard = generateKeyboard(newString);
+      const keyboard = generateKeyboard(userInfo.tag);
       if (keyboard) {
         await ctx.reply("Выберите тариф:", {
           reply_markup: keyboard,
