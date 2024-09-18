@@ -3,6 +3,7 @@ const { Bot, InlineKeyboard, Keyboard } = require("grammy");
 const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const stripe = require("stripe")(process.env.STRIPE_KEY); // Подключаем Stripe
 const axios = require("axios");
 
 const userState = {};
@@ -46,8 +47,10 @@ const actionData = {
     lessons: 10,
     tag: "SPB_personal_HKC",
   },
-  buy_9600_ds: { sum: 9600, lessons: 12, tag: "ds" },
-  buy_23400_ds: { sum: 23400, lessons: 36, tag: "ds" },
+  buy_9600_dsdasha_rub: { sum: 9600, lessons: 12, tag: "ds_dasha_rub" },
+  buy_23400_dsdasha_rub: { sum: 23400, lessons: 36, tag: "ds_dasha_rub" },
+  buy_105_dsdasha_eur: { sum: 105, lessons: 12, tag: "ds_dasha_eur" },
+  buy_249_dsdasha_eur: { sum: 249, lessons: 36, tag: "ds_dasha_eur" },
 };
 
 // Объект с данными для различных типов кнопок
@@ -164,16 +167,28 @@ const buttonsData = {
       },
     ],
   },
-  ds: [
-    {
-      text: "12 занятий (9 600₽) — действует 6 недель",
-      callback_data: "buy_9600_ds",
-    },
-    {
-      text: "36 занятий (23 400₽) — действует 14 недель",
-      callback_data: "buy_23400_ds",
-    },
-  ],
+  ds: {
+    RUBDASHA: [
+      {
+        text: "12 занятий (9 600₽) — действует 6 недель",
+        callback_data: "buy_9600_dsdasha_rub",
+      },
+      {
+        text: "36 занятий (23 400₽) — действует 14 недель",
+        callback_data: "buy_23400_dsdasha_rub",
+      },
+    ],
+    EURDASHA: [
+      {
+        text: "12 занятий (105€) — действует 6 недель",
+        callback_data: "buy_105_dsdasha_eur",
+      },
+      {
+        text: "36 занятий (249€) — действует 14 недель",
+        callback_data: "buy_249_dsdasha_eur",
+      },
+    ],
+  },
 };
 
 // Создаем экземпляр бота
@@ -227,6 +242,31 @@ function generatePaymentLink(paymentId, sum, email) {
   )}&IsTest=0`; // Используйте https://auth.robokassa.ru/ для продакшена
 }
 
+// Функция для создания объекта Price в Stripe
+async function createStripePrice(amount) {
+  const price = await stripe.prices.create({
+    unit_amount: amount * 100, // Сумма в центах
+    currency: "eur",
+    product_data: {
+      name: "Тренировки online",
+    },
+  });
+  return price.id;
+}
+
+// Функция для создания ссылки на оплату через Stripe
+async function createStripePaymentLink(priceId) {
+  const paymentLink = await stripe.paymentLinks.create({
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+  });
+  return paymentLink.url;
+}
+
 // Функция для получения информации о пользователе из Airtable
 async function getUserInfo(tgId) {
   const apiKey = process.env.AIRTABLE_API_KEY;
@@ -245,47 +285,18 @@ async function getUserInfo(tgId) {
     if (records.length > 0) {
       const email = records[0].fields.email || "нет email"; // Если email отсутствует, выводим сообщение
       const tag = records[0].fields.Tag || "неизвестен"; // Если тег отсутствует, выводим "неизвестен"
-      return { email, tag };
+      const balance =
+        records[0].fields.Balance !== undefined
+          ? records[0].fields.Balance
+          : "0";
+      const currency = records[0].fields.Currency || "неизвестна"; // Если валюты нет, выводим "неизвестна"
+      return { email, tag, balance, currency };
     } else {
       return null; // Если запись не найдена, возвращаем null
     }
   } catch (error) {
     console.error(
       "Error fetching user info from Airtable:",
-      error.response ? error.response.data : error.message
-    );
-    return null; // В случае ошибки возвращаем null
-  }
-}
-
-// Функция для получения баланса и валюты из Airtable
-async function getUserBalanceAndCurrency(tgId) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-  const tableId = process.env.AIRTABLE_TABLE_ID;
-
-  const url = `https://api.airtable.com/v0/${baseId}/${tableId}?filterByFormula={tgId}='${tgId}'`;
-  const headers = {
-    Authorization: `Bearer ${apiKey}`,
-  };
-
-  try {
-    const response = await axios.get(url, { headers });
-    const records = response.data.records;
-
-    if (records.length > 0) {
-      const balance =
-        records[0].fields.Balance !== undefined
-          ? records[0].fields.Balance
-          : "0";
-      const currency = records[0].fields.Currency || "неизвестна"; // Если валюты нет, выводим "неизвестна"
-      return { balance, currency };
-    } else {
-      return null; // Если запись не найдена, возвращаем null
-    }
-  } catch (error) {
-    console.error(
-      "Error fetching user balance and currency from Airtable:",
       error.response ? error.response.data : error.message
     );
     return null; // В случае ошибки возвращаем null
@@ -328,7 +339,12 @@ async function sendToAirtable(tgId, invId, sum, lessons, tag) {
 function generateKeyboard(tag) {
   let keyboard = new InlineKeyboard();
   console.log("Отправляю кнопки для оплаты");
-  if (tag === "MSC_group_YCG") {
+
+  if (tag === "ds_dasha_rub") {
+    buttonsData.ds.RUBDASHA.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "ds_dasha_eur") {
+    buttonsData.ds.EURDASHA.forEach((button) => keyboard.add(button).row());
+  } else if (tag === "MSC_group_YCG") {
     buttonsData.group.MSCYCG.forEach((button) => keyboard.add(button).row());
   } else if (tag === "SPB_group_SPI") {
     buttonsData.group.SPBSPI.forEach((button) => keyboard.add(button).row());
@@ -554,7 +570,19 @@ bot.on("message:text", async (ctx) => {
     const userInfo = await getUserInfo(tgId);
     console.log("нажал купить онлайн тренировки");
 
-    if (userInfo) {
+    if (tag === "ds_dasha_eur") {
+      const newString = userInfo;
+      const keyboard = generateKeyboard(newString);
+      if (keyboard) {
+        await ctx.reply("Выберите тариф:", {
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.reply(
+          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке @IDC_Manager."
+        );
+      }
+    } else if (userInfo) {
       const newString = userInfo.tag.replace(userInfo.tag, "ds");
       const keyboard = generateKeyboard(newString);
       if (keyboard) {
@@ -593,14 +621,7 @@ bot.on("callback_query", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const tgId = ctx.from.id;
 
-  if (action === "deposit") {
-    userState[tgId] = { awaitingDeposit: true };
-    await ctx.reply("Введите сумму депозита:");
-    await ctx.answerCallbackQuery();
-    return;
-  }
-
-  const userInfo = await getUserInfo(tgId);
+  const userInfo = await getUserInfo(tgId); // Получаем информацию о пользователе
   if (!userInfo) {
     await ctx.answerCallbackQuery({
       text: "Не удалось получить информацию о пользователе.",
@@ -608,8 +629,32 @@ bot.on("callback_query", async (ctx) => {
     return;
   }
 
+  if (action === "deposit") {
+    userState[tgId] = { awaitingDeposit: true };
+    await ctx.reply("Введите сумму депозита:");
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
   const { email } = userInfo;
-  const data = actionData[action];
+
+  // Фильтруем исходный объект actionData, оставляя только ключи, содержащие "dasha"
+  const filteredActionDataEur = Object.keys(actionData)
+    .filter((key) => key.includes("eur")) // Оставляем только ключи, содержащие "eur"
+    .reduce((obj, key) => {
+      obj[key] = actionData[key]; // Создаём новый объект с отфильтрованными ключами
+      return obj;
+    }, {});
+  const dataEur = filteredActionDataEur[action];
+
+  // Фильтруем исходный объект actionData, исключая указанные ключи
+  const filteredActionDataRub = Object.keys(actionData)
+    .filter((key) => !key.includes("eur")) // Исключаем ключи, содержащие "eur"
+    .reduce((obj, key) => {
+      obj[key] = actionData[key]; // Создаём новый объект с отфильтрованными ключами
+      return obj;
+    }, {});
+  const data = filteredActionDataRub[action];
 
   if (data) {
     const paymentId = generateUniqueId();
@@ -620,6 +665,18 @@ bot.on("callback_query", async (ctx) => {
     await sendToAirtable(tgId, paymentId, data.sum, data.lessons, data.tag);
 
     await ctx.answerCallbackQuery();
+  } else if (dataEur) {
+    const stripePriceId = await createStripePrice(dataEur.sum);
+    const stripePaymentLink = await createStripePaymentLink(stripePriceId);
+    await ctx.reply(`Перейдите по ссылке для оплаты: ${stripePaymentLink}`);
+    const paymentId = generateUniqueId();
+    await sendToAirtable(
+      tgId,
+      paymentId,
+      dataEur.sum,
+      dataEur.lessons,
+      dataEur.tag
+    );
   } else {
     await ctx.answerCallbackQuery({
       text: "Неверный выбор. Пожалуйста, попробуйте снова.",
