@@ -63,14 +63,6 @@ const buttonsData = {
         callback_data: "buy_1400_msc_ycg",
       },
       {
-        text: "+",
-        callback_data: "increment_lessons_1400_msc_ycg",
-      },
-      {
-        text: "-",
-        callback_data: "decrement_lessons_1400_msc_ycg",
-      },
-      {
         text: "Пополнить депозит (любая сумма)",
         callback_data: "deposit",
       },
@@ -601,79 +593,37 @@ bot.on("callback_query", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const tgId = ctx.from.id;
 
-  // Инициализация состояния пользователя, если его нет
-  if (!userState[tgId]) {
-    userState[tgId] = { deposit: {}, lessons: {} };
-  }
-
-  // Обработка кнопки депозита
   if (action === "deposit") {
-    userState[tgId].deposit.awaitingDeposit = true;
+    userState[tgId] = { awaitingDeposit: true };
     await ctx.reply("Введите сумму депозита:");
     await ctx.answerCallbackQuery();
     return;
   }
 
-  // Определяем тариф для изменения количества занятий
-  const actionKey = action
-    .replace("increment_lessons_", "")
-    .replace("decrement_lessons_", "");
-
-  if (!userState[tgId].lessons[actionKey]) {
-    userState[tgId].lessons[actionKey] = { lessons: 1 }; // Инициализация количества занятий для конкретного тарифа
-  }
-
-  // Увеличение количества занятий
-  if (action.startsWith("increment_lessons")) {
-    userState[tgId].lessons[actionKey].lessons += 1; // Увеличиваем количество занятий
-    await ctx.answerCallbackQuery("Количество увеличено");
-    await updateLessonsMessage(ctx, tgId, actionKey); // Обновляем сообщение
+  const userInfo = await getUserInfo(tgId);
+  if (!userInfo) {
+    await ctx.answerCallbackQuery({
+      text: "Не удалось получить информацию о пользователе.",
+    });
     return;
   }
 
-  // Уменьшение количества занятий
-  if (action.startsWith("decrement_lessons")) {
-    if (userState[tgId].lessons[actionKey].lessons > 1) {
-      userState[tgId].lessons[actionKey].lessons -= 1; // Уменьшаем количество занятий
-      await ctx.answerCallbackQuery("Количество уменьшено");
-      await updateLessonsMessage(ctx, tgId, actionKey); // Обновляем сообщение
-    } else {
-      await ctx.answerCallbackQuery("Минимум 1 занятие");
-    }
-    return;
-  }
+  const { email } = userInfo;
+  const data = actionData[action];
 
-  // Логика покупки
-  if (action.startsWith("buy_")) {
-    const data = actionData[action];
-    const userInfo = await getUserInfo(tgId);
-    if (!userInfo) {
-      await ctx.answerCallbackQuery({
-        text: "Не удалось получить информацию о пользователе.",
-      });
-      return;
-    }
-
-    const { email } = userInfo;
+  if (data) {
     const paymentId = generateUniqueId();
-    const totalSum = data.sum * userState[tgId].lessons[actionKey].lessons; // Умножаем сумму на количество занятий
-    const paymentLink = generatePaymentLink(paymentId, totalSum, email);
+    const paymentLink = generatePaymentLink(paymentId, data.sum, email);
+    await ctx.reply(`Отлично! Перейдите по ссылке для оплаты: ${paymentLink}`);
 
-    // Отправляем ссылку на оплату
-    await ctx.reply(`Перейдите по ссылке для оплаты: ${paymentLink}`);
+    // Отправка данных в Airtable с inv_id
+    await sendToAirtable(tgId, paymentId, data.sum, data.lessons, data.tag);
 
-    // Отправляем данные в Airtable с количеством занятий
-    await sendToAirtable(
-      tgId,
-      paymentId,
-      totalSum,
-      userState[tgId].lessons[actionKey].lessons,
-      data.tag
-    );
-
-    // Сбрасываем состояние после покупки
-    delete userState[tgId].lessons[actionKey];
     await ctx.answerCallbackQuery();
+  } else {
+    await ctx.answerCallbackQuery({
+      text: "Неверный выбор. Пожалуйста, попробуйте снова.",
+    });
   }
 });
 
