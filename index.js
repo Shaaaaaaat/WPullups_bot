@@ -678,7 +678,13 @@ bot.on("callback_query", async (ctx) => {
     );
     await ctx.reply(`Перейдите по ссылке для оплаты: ${stripePaymentLink}`);
 
-    await sendToAirtable(tgId, 1, dataEur.sum, dataEur.lessons, dataEur.tag);
+    await sendToAirtable(
+      tgId,
+      paymentId,
+      dataEur.sum,
+      dataEur.lessons,
+      dataEur.tag
+    );
   } else {
     await ctx.answerCallbackQuery({
       text: "Неверный выбор. Пожалуйста, попробуйте снова.",
