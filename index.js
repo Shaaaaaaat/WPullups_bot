@@ -654,7 +654,7 @@ bot.on("callback_query", async (ctx) => {
       return obj;
     }, {});
   const data = filteredActionDataRub[action];
-
+  console.log(dataEur);
   if (data) {
     const paymentId = generateUniqueId();
     const paymentLink = generatePaymentLink(paymentId, data.sum, email);
