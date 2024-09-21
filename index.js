@@ -20,6 +20,8 @@ const actionData = {
     lessons: 10,
     tag: "MSC_personal_YCG",
   },
+  buy_5000_personal_mscycg: { sum: 5000, lessons: 1, tag: "MSC_personal_YCG" },
+  buy_6000_personal_mscycg: { sum: 6000, lessons: 1, tag: "MSC_personal_YCG" },
   buy_11400_spb_spi: { sum: 11400, lessons: 12, tag: "SPB_group_SPI" },
   buy_9600_spb_spi: { sum: 9600, lessons: 12, tag: "SPB_group_SPI" },
   buy_1100_spb_spi: { sum: 1100, lessons: 1, tag: "SPB_group_SPI" },
@@ -29,6 +31,8 @@ const actionData = {
     lessons: 10,
     tag: "SPB_personal_SPI",
   },
+  buy_5000_personal_spbspi: { sum: 5000, lessons: 1, tag: "SPB_personal_SPI" },
+  buy_6000_personal_spbspi: { sum: 6000, lessons: 1, tag: "SPB_personal_SPI" },
   buy_11400_spb_rtc: { sum: 11400, lessons: 12, tag: "SPB_group_RTC" },
   buy_9600_spb_rtc: { sum: 9600, lessons: 12, tag: "SPB_group_RTC" },
   buy_1100_spb_rtc: { sum: 1100, lessons: 1, tag: "SPB_group_RTC" },
@@ -38,6 +42,8 @@ const actionData = {
     lessons: 10,
     tag: "SPB_personal_RTC",
   },
+  buy_5000_personal_spbrtc: { sum: 5000, lessons: 1, tag: "SPB_personal_RTC" },
+  buy_6000_personal_spbrtc: { sum: 6000, lessons: 1, tag: "SPB_personal_RTC" },
   buy_11400_spb_hkc: { sum: 11400, lessons: 12, tag: "SPB_group_HKC" },
   buy_9600_spb_hkc: { sum: 9600, lessons: 12, tag: "SPB_group_HKC" },
   buy_1100_spb_hkc: { sum: 1100, lessons: 1, tag: "SPB_group_HKC" },
@@ -47,6 +53,8 @@ const actionData = {
     lessons: 10,
     tag: "SPB_personal_HKC",
   },
+  buy_5000_personal_spbhkc: { sum: 5000, lessons: 1, tag: "SPB_personal_HKC" },
+  buy_6000_personal_spbhkc: { sum: 6000, lessons: 1, tag: "SPB_personal_HKC" },
   buy_9600_dsdasha_rub: { sum: 9600, lessons: 12, tag: "ds_dasha_rub" },
   buy_23400_dsdasha_rub: { sum: 23400, lessons: 36, tag: "ds_dasha_rub" },
   buy_105_dsdasha_eur: { sum: 1, lessons: 1, tag: "ds_dasha_eur" },
@@ -135,6 +143,14 @@ const buttonsData = {
         text: "1 занятие (3 600₽) — действует 4 недели",
         callback_data: "buy_3600_personal_mscycg",
       },
+      {
+        text: "Сплит на двоих (5 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_mscycg",
+      },
+      {
+        text: "Сплит на троих (6 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_mscycg",
+      },
     ],
     SPBSPI: [
       {
@@ -144,6 +160,14 @@ const buttonsData = {
       {
         text: "1 занятие (3 600₽) — действует 4 недели",
         callback_data: "buy_3600_personal_spbspi",
+      },
+      {
+        text: "Сплит на двоих (5 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_spbspi",
+      },
+      {
+        text: "Сплит на троих (6 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_spbspi",
       },
     ],
     SPBRTC: [
@@ -155,6 +179,14 @@ const buttonsData = {
         text: "1 занятие (3 600₽) — действует 4 недели",
         callback_data: "buy_3600_personal_spbrtc",
       },
+      {
+        text: "Сплит на двоих (5 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_spbrtc",
+      },
+      {
+        text: "Сплит на троих (6 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_spbrtc",
+      },
     ],
     SPBHKC: [
       {
@@ -164,6 +196,14 @@ const buttonsData = {
       {
         text: "1 занятие (3 600₽) — действует 4 недели",
         callback_data: "buy_3600_personal_spbhkc",
+      },
+      {
+        text: "Сплит на двоих (5 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_spbhkc",
+      },
+      {
+        text: "Сплит на троих (6 000₽) — действует 4 недели",
+        callback_data: "buy_5000_personal_spbhkc",
       },
     ],
   },
