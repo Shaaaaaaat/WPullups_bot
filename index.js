@@ -149,7 +149,7 @@ const buttonsData = {
       },
       {
         text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_mscycg",
+        callback_data: "buy_6000_personal_mscycg",
       },
     ],
     SPBSPI: [
@@ -167,7 +167,7 @@ const buttonsData = {
       },
       {
         text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_spbspi",
+        callback_data: "buy_6000_personal_spbspi",
       },
     ],
     SPBRTC: [
@@ -185,7 +185,7 @@ const buttonsData = {
       },
       {
         text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_spbrtc",
+        callback_data: "buy_6000_personal_spbrtc",
       },
     ],
     SPBHKC: [
@@ -203,7 +203,7 @@ const buttonsData = {
       },
       {
         text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_spbhkc",
+        callback_data: "buy_6000_personal_spbhkc",
       },
     ],
   },
