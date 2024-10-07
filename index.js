@@ -57,7 +57,7 @@ const actionData = {
   buy_6000_personal_spbhkc: { sum: 6000, lessons: 1, tag: "SPB_personal_HKC" },
   buy_9600_dsdasha_rub: { sum: 9600, lessons: 12, tag: "ds_dasha_rub" },
   buy_23400_dsdasha_rub: { sum: 23400, lessons: 36, tag: "ds_dasha_rub" },
-  buy_105_dsdasha_eur: { sum: 1, lessons: 1, tag: "ds_dasha_eur" },
+  buy_105_dsdasha_eur: { sum: 105, lessons: 12, tag: "ds_dasha_eur" },
   buy_249_dsdasha_eur: { sum: 249, lessons: 36, tag: "ds_dasha_eur" },
 };
 
