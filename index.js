@@ -55,6 +55,7 @@ const actionData = {
   },
   buy_5000_personal_spbhkc: { sum: 5000, lessons: 1, tag: "SPB_personal_HKC" },
   buy_6000_personal_spbhkc: { sum: 6000, lessons: 1, tag: "SPB_personal_HKC" },
+  buy_1100_dsdasha_rub: { sum: 1100, lessons: 1, tag: "ds_dasha_rub" },
   buy_9600_dsdasha_rub: { sum: 9600, lessons: 12, tag: "ds_dasha_rub" },
   buy_23400_dsdasha_rub: { sum: 23400, lessons: 36, tag: "ds_dasha_rub" },
   buy_105_dsdasha_eur: { sum: 1, lessons: 1, tag: "ds_dasha_eur" },
@@ -209,6 +210,10 @@ const buttonsData = {
   },
   ds: {
     RUBDASHA: [
+      {
+        text: "1 занятие (1 100₽) — действует 4 недели",
+        callback_data: "buy_1100_dsdasha_rub",
+      },
       {
         text: "12 занятий (9 600₽) — действует 6 недель",
         callback_data: "buy_9600_dsdasha_rub",
