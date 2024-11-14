@@ -1751,7 +1751,7 @@ bot.on("message:text", async (ctx) => {
   const userMessage = ctx.message.text;
   const tgId = ctx.from.id;
 
-  if (session.userState && session.userState.awaitingDeposit) {
+  if (session && session.userState && session.userState.awaitingDeposit) {
     const text = ctx.message.text.trim().toLowerCase();
     const sum = parseFloat(text);
     if (isNaN(sum) || sum <= 0) {
