@@ -1973,26 +1973,19 @@ bot.on("message:text", async (ctx) => {
 
     if (userInfo.tag.includes("ds") && userInfo.tag.includes("rub")) {
       const keyboard = generateKeyboard("ds_rub");
-      if (keyboard) {
-        await ctx.reply("Выберите тариф:", {
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.reply(
-          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке @IDC_Manager."
-        );
-      }
+      await ctx.reply("Выберите тариф:", {
+        reply_markup: keyboard,
+      });
     } else if (userInfo.tag.includes("ds") && userInfo.tag.includes("eur")) {
       const keyboard = generateKeyboard("ds_eur");
-      if (keyboard) {
-        await ctx.reply("Выберите тариф:", {
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.reply(
-          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке @IDC_Manager."
-        );
-      }
+      await ctx.reply("Выберите тариф:", {
+        reply_markup: keyboard,
+      });
+    } else if (!userInfo.tag.includes("ds")) {
+      const keyboard = generateKeyboard("ds_rub");
+      await ctx.reply("Выберите тариф:", {
+        reply_markup: keyboard,
+      });
     } else {
       await ctx.reply(
         "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
