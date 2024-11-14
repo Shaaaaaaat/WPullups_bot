@@ -1116,52 +1116,36 @@ app.use(bodyParser.json()); // Используем JSON для обработк
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
   const user = ctx.from;
-  console.log("Новый запуск от пользователя:");
+  const tgId = ctx.from.id;
   console.log(`ID: ${user.id}`);
   console.log(`Имя: ${user.first_name}`);
   console.log(`Фамилия: ${user.last_name || "не указана"}`);
   console.log(`Ник: ${user.username || "не указан"}`);
   console.log(`Команда /start от пользователя: ${user.id}`);
+  console.log("Команда /start от пользователя:", tgId);
 
-   // Проверка наличия сессии и её создание, если она отсутствует
-  let session = await Session.findOne({ userId: ctx.from.id.toString() });
-  if (!session) {
-    console.log(
-      "Сессия не найдена. Создаю новую сессию для пользователя:",
-      ctx.from.id
-    );
-    session = new Session({
-      userId: ctx.from.id.toString(),
-      step: "start",
-      userState: {},
-    });
-    await session.save();
-  }
+  // Проверка наличия пользователя в Airtable
+  const userInfo = await getUserInfo(tgId);
 
-  // Получаем параметры после /start
-  const args = ctx.message.text.split(" ");
-  const startParam = args[1] || null; // Получаем значение параметра (online/offline)
+  if (userInfo) {
+    console.log("Пользователь найден в базе Clients");
+    await handleExistingUserScenario(ctx);
+  } else {
+    // Получаем параметры после /start
+    const args = ctx.message.text.split(" ");
+    const startParam = args[1] || null; // Получаем значение параметра (online/offline)
 
-  try {
-    await Session.findOneAndUpdate(
-      { userId: ctx.from.id.toString() },
-      { userId: ctx.from.id.toString(), step: "start" },
-      { upsert: true }
-    );
+    try {
+      await Session.findOneAndUpdate(
+        { userId: ctx.from.id.toString() },
+        { userId: ctx.from.id.toString(), step: "start" },
+        { upsert: true }
+      );
 
-    const fullName = `${ctx.from.first_name} ${
-      ctx.from.last_name || ""
-    }`.trim();
+      const fullName = `${ctx.from.first_name} ${
+        ctx.from.last_name || ""
+      }`.trim();
 
-    const tgId = ctx.from.id; // Сохранение tgId пользователя
-    // Проверка наличия пользователя в Airtable
-    const userExists = await checkUserInAirtable(tgId);
-
-    if (userExists) {
-      // Если пользователь уже есть в базе, выполняем сценарий для существующих пользователей
-      console.log("Пользователь есть в базе Clients");
-      await handleExistingUserScenario(ctx);
-    } else {
       console.log("Пользователя нет в базе Clients");
       // Сохраняем идентификатор записи в сессии
       const airtableId = await sendFirstAirtable(
@@ -1219,9 +1203,9 @@ bot.command("start", async (ctx) => {
             .add({ text: "Ереван", callback_data: "city_yerevan" }),
         });
       }
+    } catch (error) {
+      console.error("Произошла ошибка:", error);
     }
-  } catch (error) {
-    console.error("Произошла ошибка:", error);
   }
 });
 
