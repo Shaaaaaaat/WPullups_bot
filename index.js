@@ -1123,6 +1123,21 @@ bot.command("start", async (ctx) => {
   console.log(`Ник: ${user.username || "не указан"}`);
   console.log(`Команда /start от пользователя: ${user.id}`);
 
+   // Проверка наличия сессии и её создание, если она отсутствует
+  let session = await Session.findOne({ userId: ctx.from.id.toString() });
+  if (!session) {
+    console.log(
+      "Сессия не найдена. Создаю новую сессию для пользователя:",
+      ctx.from.id
+    );
+    session = new Session({
+      userId: ctx.from.id.toString(),
+      step: "start",
+      userState: {},
+    });
+    await session.save();
+  }
+
   // Получаем параметры после /start
   const args = ctx.message.text.split(" ");
   const startParam = args[1] || null; // Получаем значение параметра (online/offline)
