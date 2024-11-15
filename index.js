@@ -1715,7 +1715,7 @@ bot.on("callback_query:data", async (ctx) => {
   } else if (action.startsWith("buy")) {
     console.log("генерирую ссылку для оплаты после нажатия кнопки с тарифом");
 
-    const userInfo = await getUserInfo(tgId);
+    const userInfo = await getUserInfo(ctx.from.id);
     const { tag, email } = userInfo;
 
 
