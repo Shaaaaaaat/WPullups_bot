@@ -630,7 +630,7 @@ const buttonsData = {
         callback_data: "buy_6000_personal_mscycg",
       },
     ],
-    MSCYCG: [
+    MSCELF: [
       {
         text: "10 занятий (32 400₽) — действует 6 недель",
         callback_data: "buy_32400_personal_mscelf",
@@ -1122,7 +1122,6 @@ bot.command("start", async (ctx) => {
   console.log(`Фамилия: ${user.last_name || "не указана"}`);
   console.log(`Ник: ${user.username || "не указан"}`);
   console.log(`Команда /start от пользователя: ${user.id}`);
-  console.log("Команда /start от пользователя:", tgId);
 
   // Проверка наличия пользователя в Airtable
   const userInfo = await getUserInfo(tgId);
