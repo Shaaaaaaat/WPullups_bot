@@ -630,7 +630,7 @@ const buttonsData = {
         callback_data: "buy_6000_personal_mscycg",
       },
     ],
-    MSCYCG: [
+    MSCELF: [
       {
         text: "10 занятий (32 400₽) — действует 6 недель",
         callback_data: "buy_32400_personal_mscelf",
@@ -1116,52 +1116,35 @@ app.use(bodyParser.json()); // Используем JSON для обработк
 // Обработчик команд бота
 bot.command("start", async (ctx) => {
   const user = ctx.from;
-  console.log("Новый запуск от пользователя:");
+  const tgId = ctx.from.id;
   console.log(`ID: ${user.id}`);
   console.log(`Имя: ${user.first_name}`);
   console.log(`Фамилия: ${user.last_name || "не указана"}`);
   console.log(`Ник: ${user.username || "не указан"}`);
   console.log(`Команда /start от пользователя: ${user.id}`);
 
-  // Проверка наличия сессии и её создание, если она отсутствует
-  let session = await Session.findOne({ userId: ctx.from.id.toString() });
-  if (!session) {
-    console.log(
-      "Сессия не найдена. Создаю новую сессию для пользователя:",
-      ctx.from.id
-    );
-    session = new Session({
-      userId: ctx.from.id.toString(),
-      step: "start",
-      userState: {},
-    });
-    await session.save();
-  }
+  // Проверка наличия пользователя в Airtable
+  const userInfo = await getUserInfo(tgId);
 
-  // Получаем параметры после /start
-  const args = ctx.message.text.split(" ");
-  const startParam = args[1] || null; // Получаем значение параметра (online/offline)
+  if (userInfo) {
+    console.log("Пользователь найден в базе Clients");
+    await handleExistingUserScenario(ctx);
+  } else {
+    // Получаем параметры после /start
+    const args = ctx.message.text.split(" ");
+    const startParam = args[1] || null; // Получаем значение параметра (online/offline)
 
-  try {
-    await Session.findOneAndUpdate(
-      { userId: ctx.from.id.toString() },
-      { userId: ctx.from.id.toString(), step: "start" },
-      { upsert: true }
-    );
+    try {
+      await Session.findOneAndUpdate(
+        { userId: ctx.from.id.toString() },
+        { userId: ctx.from.id.toString(), step: "start" },
+        { upsert: true }
+      );
 
-    const fullName = `${ctx.from.first_name} ${
-      ctx.from.last_name || ""
-    }`.trim();
+      const fullName = `${ctx.from.first_name} ${
+        ctx.from.last_name || ""
+      }`.trim();
 
-    const tgId = ctx.from.id; // Сохранение tgId пользователя
-    // Проверка наличия пользователя в Airtable
-    const userExists = await checkUserInAirtable(tgId);
-
-    if (userExists) {
-      // Если пользователь уже есть в базе, выполняем сценарий для существующих пользователей
-      console.log("Пользователь есть в базе Clients");
-      await handleExistingUserScenario(ctx);
-    } else {
       console.log("Пользователя нет в базе Clients");
       // Сохраняем идентификатор записи в сессии
       const airtableId = await sendFirstAirtable(
@@ -1207,7 +1190,7 @@ bot.command("start", async (ctx) => {
         );
       } else {
         // Если параметр не указан или не распознан
-        console.log("Параметр не указан или не распознан.");
+        console.log("Не понятно откуда пришел, загружаю расширенное меню.");
         await ctx.reply("Привет! Подскажите, пожалуйста, что вас интересует?", {
           reply_markup: new InlineKeyboard()
             .add({ text: "Онлайн-курсы", callback_data: "online" })
@@ -1219,9 +1202,9 @@ bot.command("start", async (ctx) => {
             .add({ text: "Ереван", callback_data: "city_yerevan" }),
         });
       }
+    } catch (error) {
+      console.error("Произошла ошибка:", error);
     }
-  } catch (error) {
-    console.error("Произошла ошибка:", error);
   }
 });
 
@@ -1435,6 +1418,19 @@ bot.on("callback_query:data", async (ctx) => {
 
   if (action === "deposit") {
     console.log("Нажал кнопку пополнить депозит");
+    // Проверяем, существует ли сессия
+    let session = await Session.findOne({ userId: ctx.from.id.toString() });
+    if (!session) {
+      console.log(
+        `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
+      );
+      session = new Session({
+        userId: ctx.from.id.toString(),
+        step: "start",
+        userState: {},
+      });
+      await session.save();
+    }
     session.userState = { awaitingDeposit: true };
     await ctx.reply("Введите сумму депозита:");
     await ctx.answerCallbackQuery();
@@ -1718,12 +1714,13 @@ bot.on("callback_query:data", async (ctx) => {
   } else if (action.startsWith("buy")) {
     console.log("генерирую ссылку для оплаты после нажатия кнопки с тарифом");
 
+    const userInfo = await getUserInfo(ctx.from.id);
+    const { tag, email } = userInfo;
+
     try {
       await bot.api.sendMessage(
         -4510303967,
-        `Выставлен счет - Заявка на тренировку в ${session.studio}\nИмя: ${
-          session.name
-        }\nТел: ${session.phone}\nEmail: ${session.email}\nНик: @${
+        `Выставлен счет - Заявка на тренировку в ${tag}\nEmail: ${email}\nНик: @${
           ctx.from?.username || "не указан"
         }\nID: ${ctx.from?.id}`
       );
@@ -1735,7 +1732,7 @@ bot.on("callback_query:data", async (ctx) => {
     const actionInfo = actionData[action];
     const { paymentLink, paymentId } = await generateSecondPaymentLink(
       action,
-      session.email
+      email
     );
 
     // Отправляем пользователю ссылку на оплату
@@ -1763,11 +1760,22 @@ bot.on("callback_query:data", async (ctx) => {
 
 // Обработчик для нажатий обычных кнопок
 bot.on("message:text", async (ctx) => {
-  const session = await Session.findOne({ userId: ctx.from.id.toString() });
+  let session = await Session.findOne({ userId: ctx.from.id.toString() });
   const userMessage = ctx.message.text;
   const tgId = ctx.from.id;
 
-  if (session.userState && session.userState.awaitingDeposit) {
+  // Если сессия не найдена, создаём новую
+  if (!session) {
+    console.log(`Сессия не найдена для пользователя ${tgId}. Создаём новую.`);
+    session = new Session({
+      userId: tgId,
+      step: "start_сlient",
+      userState: {},
+    });
+    await session.save();
+  }
+
+  if (session && session.userState && session.userState.awaitingDeposit) {
     const text = ctx.message.text.trim().toLowerCase();
     const sum = parseFloat(text);
     if (isNaN(sum) || sum <= 0) {
@@ -1989,26 +1997,19 @@ bot.on("message:text", async (ctx) => {
 
     if (userInfo.tag.includes("ds") && userInfo.tag.includes("rub")) {
       const keyboard = generateKeyboard("ds_rub");
-      if (keyboard) {
-        await ctx.reply("Выберите тариф:", {
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.reply(
-          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке @IDC_Manager."
-        );
-      }
+      await ctx.reply("Выберите тариф:", {
+        reply_markup: keyboard,
+      });
     } else if (userInfo.tag.includes("ds") && userInfo.tag.includes("eur")) {
       const keyboard = generateKeyboard("ds_eur");
-      if (keyboard) {
-        await ctx.reply("Выберите тариф:", {
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.reply(
-          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке @IDC_Manager."
-        );
-      }
+      await ctx.reply("Выберите тариф:", {
+        reply_markup: keyboard,
+      });
+    } else if (!userInfo.tag.includes("ds")) {
+      const keyboard = generateKeyboard("ds_rub");
+      await ctx.reply("Выберите тариф:", {
+        reply_markup: keyboard,
+      });
     } else {
       await ctx.reply(
         "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
