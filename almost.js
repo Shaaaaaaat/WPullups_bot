@@ -1431,7 +1431,7 @@ bot.on("callback_query:data", async (ctx) => {
       });
       await session.save();
     }
-
+    
     session.userState = { awaitingDeposit: true };
     await ctx.reply("Введите сумму депозита:");
     await ctx.answerCallbackQuery();
@@ -1718,6 +1718,7 @@ bot.on("callback_query:data", async (ctx) => {
     const userInfo = await getUserInfo(ctx.from.id);
     const { tag, email } = userInfo;
 
+
     try {
       await bot.api.sendMessage(
         -4510303967,
@@ -1735,6 +1736,7 @@ bot.on("callback_query:data", async (ctx) => {
       action,
       email
     );
+
 
     // Отправляем пользователю ссылку на оплату
     await ctx.reply(`Для оплаты перейдите по ссылке: ${paymentLink}`);
@@ -1766,16 +1768,12 @@ bot.on("message:text", async (ctx) => {
   const tgId = ctx.from.id;
 
   // Если сессия не найдена, создаём новую
-  if (!session) {
-    console.log(`Сессия не найдена для пользователя ${tgId}. Создаём новую.`);
-    session = new Session({
-      userId: tgId,
-      step: "start_сlient",
-      userState: {},
-    });
-    await session.save();
-  }
-
+    if (!session) {
+      console.log(`Сессия не найдена для пользователя ${tgId}. Создаём новую.`);
+      session = new Session({ userId: tgId, step: "start_сlient", userState: {} });
+      await session.save();
+    }
+  
   if (session.userState && session.userState.awaitingDeposit) {
     const text = ctx.message.text.trim().toLowerCase();
     const sum = parseFloat(text);
