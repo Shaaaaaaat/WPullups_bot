@@ -1190,7 +1190,7 @@ bot.command("start", async (ctx) => {
         );
       } else {
         // Если параметр не указан или не распознан
-        console.log("Параметр не указан или не распознан.");
+        console.log("Не понятно откуда пришел, загружаю расширенное меню.");
         await ctx.reply("Привет! Подскажите, пожалуйста, что вас интересует?", {
           reply_markup: new InlineKeyboard()
             .add({ text: "Онлайн-курсы", callback_data: "online" })
