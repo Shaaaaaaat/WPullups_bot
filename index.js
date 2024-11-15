@@ -1715,12 +1715,14 @@ bot.on("callback_query:data", async (ctx) => {
   } else if (action.startsWith("buy")) {
     console.log("генерирую ссылку для оплаты после нажатия кнопки с тарифом");
 
+    const userInfo = await getUserInfo(tgId);
+    const { tag, email } = userInfo;
+
+
     try {
       await bot.api.sendMessage(
         -4510303967,
-        `Выставлен счет - Заявка на тренировку в ${session.studio}\nИмя: ${
-          session.name
-        }\nТел: ${session.phone}\nEmail: ${session.email}\nНик: @${
+        `Выставлен счет - Заявка на тренировку в ${tag}\nEmail: ${email}\nНик: @${
           ctx.from?.username || "не указан"
         }\nID: ${ctx.from?.id}`
       );
@@ -1732,8 +1734,9 @@ bot.on("callback_query:data", async (ctx) => {
     const actionInfo = actionData[action];
     const { paymentLink, paymentId } = await generateSecondPaymentLink(
       action,
-      session.email
+      email
     );
+
 
     // Отправляем пользователю ссылку на оплату
     await ctx.reply(`Для оплаты перейдите по ссылке: ${paymentLink}`);
