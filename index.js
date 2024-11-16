@@ -1716,7 +1716,9 @@ bot.on("callback_query:data", async (ctx) => {
     console.log("генерирую ссылку для оплаты после нажатия кнопки с тарифом");
 
     const userInfo = await getUserInfo(ctx.from.id);
-    const { tag, email } = userInfo;
+    // const { tag, email } = userInfo;
+    const email = userInfo?.email || session?.email;
+    const tag = userInfo?.tag || "Отсутствует";
 
     try {
       await bot.api.sendMessage(
