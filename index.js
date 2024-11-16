@@ -442,7 +442,7 @@ const actionData = {
     studio: "ул. Бузанда",
   },
   buy_7000_yvn_gfg: {
-    sum: 400,
+    sum: 7000,
     lessons: 1,
     tag: "YVN_group_GFG",
     currency: "AMD",
@@ -749,7 +749,7 @@ const studioDetails = {
     paymentSystem: "robokassa", // Использовать Robokassa для России
   },
   "м. Октябрьская": {
-    price: 950,
+    price: 760,
     currency: "RUB",
     tag: "01MSC_group_ELF_start",
     paymentSystem: "robokassa", // Использовать Robokassa для России
