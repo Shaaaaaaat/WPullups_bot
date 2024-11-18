@@ -749,7 +749,7 @@ const studioDetails = {
     paymentSystem: "robokassa", // Использовать Robokassa для России
   },
   "м. Октябрьская": {
-    price: 760,
+    price: 950,
     currency: "RUB",
     tag: "01MSC_group_ELF_start",
     paymentSystem: "robokassa", // Использовать Robokassa для России
