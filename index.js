@@ -1807,9 +1807,12 @@ bot.on("message:text", async (ctx) => {
       ctx.from.username
     );
 
-    // Сбрасываем состояние пользователя
-    delete session.userState;
-    return;
+    // // Сбрасываем состояние пользователя
+    // delete session.userState;
+    // return;
+    // Сбрасываем состояние
+    session.userState = {}; // Очистка состояния
+    await session.save();
   }
   // Проверка на ожидаемый ответ о времени тренировки
   if (session.step === "awaiting_personal_training_details") {
