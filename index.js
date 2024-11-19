@@ -1765,7 +1765,7 @@ bot.on("callback_query:data", async (ctx) => {
 
 // Обработчик для нажатий обычных кнопок
 bot.on("message:text", async (ctx) => {
-  let session = await Session.findOne({ userId: ctx.from.id.toString() });
+  // let session = await Session.findOne({ userId: ctx.from.id.toString() });
   const userMessage = ctx.message.text;
   const tgId = ctx.from.id;
 
