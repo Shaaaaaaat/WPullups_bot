@@ -1435,6 +1435,7 @@ bot.on("callback_query:data", async (ctx) => {
     session.userState = { awaitingDeposit: true };
     console.log("awaitingDeposit: true");
     console.log(`${session.userState.awaitingDeposit}`);
+    await session.save();
     await ctx.reply("Введите сумму депозита:");
     await ctx.answerCallbackQuery();
     return;
