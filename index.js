@@ -1779,7 +1779,9 @@ bot.on("message:text", async (ctx) => {
   //   });
   //   await session.save();
   // }
+  console.log(`${session.userState.awaitingDeposit}`);
   console.log("это запустилось?");
+
   if (session.userState?.awaitingDeposit === true) {
     console.log("а это запустилось 2?");
     const text = ctx.message.text.trim().toLowerCase();
