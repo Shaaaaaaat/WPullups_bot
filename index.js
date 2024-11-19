@@ -1420,17 +1420,17 @@ bot.on("callback_query:data", async (ctx) => {
     console.log("Нажал кнопку пополнить депозит");
     // Проверяем, существует ли сессия
     let session = await Session.findOne({ userId: ctx.from.id.toString() });
-    // if (!session) {
-    //   console.log(
-    //     `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
-    //   );
-    //   session = new Session({
-    //     userId: ctx.from.id.toString(),
-    //     step: "start",
-    //     userState: {},
-    //   });
-    //   await session.save();
-    // }
+    if (!session) {
+      console.log(
+        `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
+      );
+      session = new Session({
+        userId: ctx.from.id.toString(),
+        step: "start",
+        userState: {},
+      });
+      await session.save();
+    }
 
     session.userState = { awaitingDeposit: true };
     console.log("awaitingDeposit: true");
@@ -1769,16 +1769,16 @@ bot.on("message:text", async (ctx) => {
   const userMessage = ctx.message.text;
   const tgId = ctx.from.id;
 
-  // // Если сессия не найдена, создаём новую
-  // if (!session) {
-  //   console.log(`Сессия не найдена для пользователя ${tgId}. Создаём новую.`);
-  //   session = new Session({
-  //     userId: tgId,
-  //     step: "start_сlient",
-  //     userState: {},
-  //   });
-  //   await session.save();
-  // }
+  // Если сессия не найдена, создаём новую
+  if (!session) {
+    console.log(`Сессия не найдена для пользователя ${tgId}. Создаём новую.`);
+    session = new Session({
+      userId: tgId,
+      step: "start_сlient",
+      userState: {},
+    });
+    await session.save();
+  }
   console.log(`${session.userState.awaitingDeposit}`);
   console.log("это запустилось?");
 
