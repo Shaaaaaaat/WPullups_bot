@@ -1420,21 +1420,21 @@ bot.on("callback_query:data", async (ctx) => {
     console.log("Нажал кнопку пополнить депозит");
     // Проверяем, существует ли сессия
     let session = await Session.findOne({ userId: ctx.from.id.toString() });
-    if (!session) {
-      console.log(
-        `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
-      );
-      session = new Session({
-        userId: ctx.from.id.toString(),
-        step: "start",
-        userState: {},
-      });
-      await session.save();
-    }
+    // if (!session) {
+    //   console.log(
+    //     `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
+    //   );
+    //   session = new Session({
+    //     userId: ctx.from.id.toString(),
+    //     step: "start",
+    //     userState: {},
+    //   });
+    //   await session.save();
+    // }
 
     session.userState = { awaitingDeposit: true };
     console.log("awaitingDeposit: true");
-    console.log(`${session.userState}`);
+    console.log(`${session.userState.awaitingDeposit}`);
     await ctx.reply("Введите сумму депозита:");
     await ctx.answerCallbackQuery();
     return;
