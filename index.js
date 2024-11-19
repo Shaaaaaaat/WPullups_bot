@@ -1431,7 +1431,7 @@ bot.on("callback_query:data", async (ctx) => {
       });
       await session.save();
     }
-
+    console.log("awaitingDeposit: true");
     session.userState = { awaitingDeposit: true };
     await ctx.reply("Введите сумму депозита:");
     await ctx.answerCallbackQuery();
@@ -1777,8 +1777,9 @@ bot.on("message:text", async (ctx) => {
   //   });
   //   await session.save();
   // }
-
+  console.log("это запустилось?");
   if (session.userState && session.userState.awaitingDeposit) {
+    console.log("а это запустилось 2?");
     const text = ctx.message.text.trim().toLowerCase();
     const sum = parseFloat(text);
     if (isNaN(sum) || sum <= 0) {
