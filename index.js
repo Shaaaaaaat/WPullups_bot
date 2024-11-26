@@ -156,359 +156,18 @@ async function createStripePaymentLink(priceId, paymentId) {
   return paymentLink.url;
 }
 
-const RECIPIENTS_BY_STUDIO = {
-  "м. 1905г.": ["-4510303967", "346342296"], // Замените ID на реальные для этой студии
-  "м. Петроградская": ["-4510303967", "468995031"],
-  "м. Выборгская": ["-4510303967", "582033795"],
-  "м. Московские Ворота": ["-4510303967", "206607601"],
-  "ул. Бузанда": ["-4510303967", "256168227"],
-};
-
 const actionData = {
-  buy_13200_msc_ycg: {
-    sum: 13200,
-    lessons: 12,
-    tag: "MSC_group_YCG",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_1400_msc_ycg: {
-    sum: 1400,
-    lessons: 1,
-    tag: "MSC_group_YCG",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_3600_personal_mscycg: {
-    sum: 3600,
-    lessons: 1,
-    tag: "MSC_personal_YCG",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_32400_personal_mscycg: {
-    sum: 32400,
-    lessons: 10,
-    tag: "MSC_personal_YCG",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_5000_personal_mscycg: {
-    sum: 5000,
-    lessons: 1,
-    tag: "MSC_personal_YCG",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_6000_personal_mscycg: {
-    sum: 6000,
-    lessons: 1,
-    tag: "MSC_personal_YCG",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_13200_msc_elf: {
-    sum: 13200,
-    lessons: 12,
-    tag: "MSC_group_ELF",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_1400_msc_elf: {
-    sum: 1400,
-    lessons: 1,
-    tag: "MSC_group_ELF",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_3600_personal_mscelf: {
-    sum: 3600,
-    lessons: 1,
-    tag: "MSC_personal_ELF",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_32400_personal_mscelf: {
-    sum: 32400,
-    lessons: 10,
-    tag: "MSC_personal_ELF",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_5000_personal_mscelf: {
-    sum: 5000,
-    lessons: 1,
-    tag: "MSC_personal_ELF",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_6000_personal_mscelf: {
-    sum: 6000,
-    lessons: 1,
-    tag: "MSC_personal_ELF",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_11400_spb_spi: {
-    sum: 11400,
-    lessons: 12,
-    tag: "SPB_group_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_9600_spb_spi: {
-    sum: 9600,
-    lessons: 12,
-    tag: "SPB_group_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_1100_spb_spi: {
-    sum: 1100,
-    lessons: 1,
-    tag: "SPB_group_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_3600_personal_spbspi: {
-    sum: 3600,
-    lessons: 1,
-    tag: "SPB_personal_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_32400_personal_spbspi: {
-    sum: 32400,
-    lessons: 10,
-    tag: "SPB_personal_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_5000_personal_spbspi: {
-    sum: 5000,
-    lessons: 1,
-    tag: "SPB_personal_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_6000_personal_spbspi: {
-    sum: 6000,
-    lessons: 1,
-    tag: "SPB_personal_SPI",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_11400_spb_rtc: {
-    sum: 11400,
-    lessons: 12,
-    tag: "SPB_group_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_9600_spb_rtc: {
-    sum: 9600,
-    lessons: 12,
-    tag: "SPB_group_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_1100_spb_rtc: {
-    sum: 1100,
-    lessons: 1,
-    tag: "SPB_group_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_3600_personal_spbrtc: {
-    sum: 3600,
-    lessons: 1,
-    tag: "SPB_personal_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_32400_personal_spbrtc: {
-    sum: 32400,
-    lessons: 10,
-    tag: "SPB_personal_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_5000_personal_spbrtc: {
-    sum: 5000,
-    lessons: 1,
-    tag: "SPB_personal_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_6000_personal_spbrtc: {
-    sum: 6000,
-    lessons: 1,
-    tag: "SPB_personal_RTC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_11400_spb_hkc: {
-    sum: 11400,
-    lessons: 12,
-    tag: "SPB_group_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_9600_spb_hkc: {
-    sum: 9600,
-    lessons: 12,
-    tag: "SPB_group_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_1100_spb_hkc: {
-    sum: 1100,
-    lessons: 1,
-    tag: "SPB_group_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_3600_personal_spbhkc: {
-    sum: 3600,
-    lessons: 1,
-    tag: "SPB_personal_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_32400_personal_spbhkc: {
-    sum: 32400,
-    lessons: 10,
-    tag: "SPB_personal_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_5000_personal_spbhkc: {
-    sum: 5000,
-    lessons: 1,
-    tag: "SPB_personal_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_6000_personal_spbhkc: {
-    sum: 6000,
-    lessons: 1,
-    tag: "SPB_personal_HKC",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_1100_ds_rub: {
-    sum: 1100,
+  buy_6900_ds_rub: {
+    sum: 6900,
     lessons: 1,
     tag: "ds_rub",
     currency: "RUB",
     paymentSystem: "robokassa",
   },
-  buy_9600_ds_rub: {
-    sum: 9600,
-    lessons: 12,
-    tag: "ds_rub",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_23400_ds_rub: {
-    sum: 23400,
-    lessons: 36,
-    tag: "ds_rub",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-  },
-  buy_105_ds_eur: {
-    sum: 105,
-    lessons: 12,
+  buy_69_ds_eur: {
+    sum: 69,
+    lessons: 1,
     tag: "ds_eur",
-    currency: "EUR",
-    paymentSystem: "stripeEUR",
-    studio: "super_calisthenics",
-  },
-  buy_249_ds_eur: {
-    sum: 249,
-    lessons: 36,
-    tag: "ds_eur",
-    currency: "EUR",
-    paymentSystem: "stripeEUR",
-    studio: "super_calisthenics",
-  },
-  buy_60000_yvn_gfg: {
-    sum: 60000,
-    lessons: 12,
-    tag: "YVN_group_GFG",
-    currency: "AMD",
-    paymentSystem: "stripeAMD",
-    studio: "ул. Бузанда",
-  },
-  buy_7000_yvn_gfg: {
-    sum: 7000,
-    lessons: 1,
-    tag: "YVN_group_GFG",
-    currency: "AMD",
-    paymentSystem: "stripeAMD",
-    studio: "ул. Бузанда",
-  },
-  buy_12500_personal_yvngfg: {
-    sum: 12500,
-    lessons: 1,
-    tag: "YVN_group_GFG",
-    currency: "AMD",
-    paymentSystem: "stripeAMD",
-    studio: "ул. Бузанда",
-  },
-  buy_17000_personal_yvngfg: {
-    sum: 17000,
-    lessons: 1,
-    tag: "YVN_group_GFG",
-    currency: "AMD",
-    paymentSystem: "stripeAMD",
-    studio: "ул. Бузанда",
-  },
-  buy_5400_handstand_rub: {
-    sum: 5400,
-    lessons: 1,
-    tag: "handstand",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-    studio: "handstand",
-  },
-  buy_2700_handstand_rub: {
-    sum: 2700,
-    lessons: 1,
-    tag: "handstand",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-    studio: "handstand",
-  },
-  buy_59_handstand_eur: {
-    sum: 59,
-    lessons: 1,
-    tag: "handstand",
-    currency: "EUR",
-    paymentSystem: "stripeEUR",
-    studio: "handstand",
-  },
-  buy_29_handstand_eur: {
-    sum: 29,
-    lessons: 1,
-    tag: "handstand",
-    currency: "EUR",
-    paymentSystem: "stripeEUR",
-    studio: "handstand",
-  },
-  buy_950_powertest_ru: {
-    sum: 950,
-    lessons: 1,
-    tag: "super_calisthenics_start",
-    currency: "RUB",
-    paymentSystem: "robokassa",
-    studio: "super_calisthenics",
-  },
-  buy_10_powertest_eur: {
-    sum: 10,
-    lessons: 1,
-    tag: "super_calisthenics_start",
     currency: "EUR",
     paymentSystem: "stripeEUR",
     studio: "super_calisthenics",
@@ -517,202 +176,6 @@ const actionData = {
 
 // Объект с данными для различных типов кнопок
 const buttonsData = {
-  group: {
-    MSCYCG: [
-      {
-        text: "12 занятий (13 200₽) — действует 8 недель",
-        callback_data: "buy_13200_msc_ycg",
-      },
-      {
-        text: "1 занятие (1 400₽) — действует 4 недели",
-        callback_data: "buy_1400_msc_ycg",
-      },
-      {
-        text: "Пополнить депозит (любая сумма)",
-        callback_data: "deposit",
-      },
-    ],
-    MSCELF: [
-      {
-        text: "12 занятий (13 200₽) — действует 8 недель",
-        callback_data: "buy_13200_msc_elf",
-      },
-      {
-        text: "1 занятие (1 400₽) — действует 4 недели",
-        callback_data: "buy_1400_msc_elf",
-      },
-      {
-        text: "Пополнить депозит (любая сумма)",
-        callback_data: "deposit",
-      },
-    ],
-    SPBSPI: [
-      {
-        text: "12 занятий (11 400₽) — действует 6 недель",
-        callback_data: "buy_11400_spb_spi",
-      },
-      {
-        text: "12 занятий (9 600₽) — действует 4 недели",
-        callback_data: "buy_9600_spb_spi",
-      },
-      {
-        text: "1 занятие (1 100₽) — действует 4 недели",
-        callback_data: "buy_1100_spb_spi",
-      },
-      {
-        text: "Пополнить депозит (любая сумма)",
-        callback_data: "deposit",
-      },
-    ],
-    SPBRTC: [
-      {
-        text: "12 занятий (11 400₽) — действует 6 недель",
-        callback_data: "buy_11400_spb_rtc",
-      },
-      {
-        text: "12 занятий (9 600₽) — действует 4 недели",
-        callback_data: "buy_9600_spb_rtc",
-      },
-      {
-        text: "1 занятие (1 100₽) — действует 4 недели",
-        callback_data: "buy_1100_spb_rtc",
-      },
-      {
-        text: "Пополнить депозит (любая сумма)",
-        callback_data: "deposit",
-      },
-    ],
-    SPBHKC: [
-      {
-        text: "12 занятий (11 400₽) — действует 6 недель",
-        callback_data: "buy_11400_spb_hkc",
-      },
-      {
-        text: "12 занятий (9 600₽) — действует 4 недели",
-        callback_data: "buy_9600_spb_hkc",
-      },
-      {
-        text: "1 занятие (1 100₽) — действует 4 недели",
-        callback_data: "buy_1100_spb_hkc",
-      },
-      {
-        text: "Пополнить депозит (любая сумма)",
-        callback_data: "deposit",
-      },
-    ],
-    YVNGFG: [
-      {
-        text: "12 занятий (60000դր.) — действует 6 недель",
-        callback_data: "buy_60000_yvn_gfg",
-      },
-      {
-        text: "1 занятие (7000դր.) — действует 4 недели",
-        callback_data: "buy_7000_yvn_gfg",
-      },
-    ],
-  },
-  personal: {
-    MSCYCG: [
-      {
-        text: "10 занятий (32 400₽) — действует 6 недель",
-        callback_data: "buy_32400_personal_mscycg",
-      },
-      {
-        text: "1 занятие (3 600₽) — действует 4 недели",
-        callback_data: "buy_3600_personal_mscycg",
-      },
-      {
-        text: "Сплит на двоих (5 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_mscycg",
-      },
-      {
-        text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_6000_personal_mscycg",
-      },
-    ],
-    MSCELF: [
-      {
-        text: "10 занятий (32 400₽) — действует 6 недель",
-        callback_data: "buy_32400_personal_mscelf",
-      },
-      {
-        text: "1 занятие (3 600₽) — действует 4 недели",
-        callback_data: "buy_3600_personal_mscelf",
-      },
-      {
-        text: "Сплит на двоих (5 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_mscelf",
-      },
-      {
-        text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_6000_personal_mscelf",
-      },
-    ],
-    SPBSPI: [
-      {
-        text: "10 занятий (32 400₽) — действует 6 недель",
-        callback_data: "buy_32400_personal_spbspi",
-      },
-      {
-        text: "1 занятие (3 600₽) — действует 4 недели",
-        callback_data: "buy_3600_personal_spbspi",
-      },
-      {
-        text: "Сплит на двоих (5 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_spbspi",
-      },
-      {
-        text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_6000_personal_spbspi",
-      },
-    ],
-    SPBRTC: [
-      {
-        text: "10 занятий (32 400₽) — действует 6 недель",
-        callback_data: "buy_32400_personal_spbrtc",
-      },
-      {
-        text: "1 занятие (3 600₽) — действует 4 недели",
-        callback_data: "buy_3600_personal_spbrtc",
-      },
-      {
-        text: "Сплит на двоих (5 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_spbrtc",
-      },
-      {
-        text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_6000_personal_spbrtc",
-      },
-    ],
-    SPBHKC: [
-      {
-        text: "10 занятий (32 400₽) — действует 6 недель",
-        callback_data: "buy_32400_personal_spbhkc",
-      },
-      {
-        text: "1 занятие (3 600₽) — действует 4 недели",
-        callback_data: "buy_3600_personal_spbhkc",
-      },
-      {
-        text: "Сплит на двоих (5 000₽) — действует 4 недели",
-        callback_data: "buy_5000_personal_spbhkc",
-      },
-      {
-        text: "Сплит на троих (6 000₽) — действует 4 недели",
-        callback_data: "buy_6000_personal_spbhkc",
-      },
-    ],
-    YVNGFG: [
-      {
-        text: "1 занятие (12500դր.) — действует 4 недели",
-        callback_data: "buy_12500_personal_yvngfg",
-      },
-      {
-        text: "Сплит на двоих (17000դր.) — действует 4 недели",
-        callback_data: "buy_17000_personal_yvngfg",
-      },
-    ],
-  },
   ds: {
     RUB: [
       {
@@ -742,42 +205,6 @@ const buttonsData = {
 };
 
 const studioDetails = {
-  "м. 1905г.": {
-    price: 950,
-    currency: "RUB",
-    tag: "01MSC_group_YCG_start",
-    paymentSystem: "robokassa", // Использовать Robokassa для России
-  },
-  "м. Октябрьская": {
-    price: 950,
-    currency: "RUB",
-    tag: "01MSC_group_ELF_start",
-    paymentSystem: "robokassa", // Использовать Robokassa для России
-  },
-  "м. Петроградская": {
-    price: 950,
-    currency: "RUB",
-    tag: "01SPB_group_RTC_start",
-    paymentSystem: "robokassa", // Использовать Robokassa для России
-  },
-  "м. Выборгская": {
-    price: 950,
-    currency: "RUB",
-    tag: "01SPB_group_HKC_start",
-    paymentSystem: "robokassa",
-  },
-  "м. Московские Ворота": {
-    price: 950,
-    currency: "RUB",
-    tag: "01SPB_group_SPI_start",
-    paymentSystem: "robokassa",
-  },
-  "ул. Бузанда": {
-    price: 5000,
-    currency: "AMD",
-    tag: "01YVN_group_GFG_start",
-    paymentSystem: "stripeAMD", // Использовать Stripe для Еревана
-  },
   handstand_ru: {
     price: 5400,
     currency: "RUB",
@@ -795,18 +222,6 @@ const studioDetails = {
 // Функция для получения данных о ценах и расписании в зависимости от студии
 function getPriceAndSchedule(studio) {
   const priceSchedule = {
-    "м. 1905г.":
-      "Адрес студии м. 1905г.: \nУл. Большая Декабрьская, д.3 с25\n\n🔻 Расписание занятий:\nВторник 18:40 и 20:00\nЧетверг 18:40 и 20:00\nСуббота 12:00\n\n🔻 Стоимость тренировок:\n👉🏻Пробное - 950₽ (действует 4 недели)\n👉🏻12 занятий - 13200₽ (действует 8 недель)\n👉🏻1 занятие - 1400₽ (действует 4 недели)\n\n🔻 Цены индивидуальных тренировок:\n1 тренировка (1 чел.) - 3600₽ за занятие\n1 тренировка (2 чел.) - 5000₽ за занятие\n1 тренировка (3 чел.) - 6000₽ за занятие",
-    "м. Октябрьская":
-      "Адрес студии м. Октябрьская: \nКалужская площадь, 1к2\n\n🔻 Расписание занятий:\nПонедельник 20:00\nСреда 20:00\nПятница 20.00\n\n🔻 Стоимость тренировок:\n👉🏻Пробное - 950₽ (действует 4 недели)\n👉🏻12 занятий - 13200₽ (действует 8 недель)\n👉🏻1 занятие - 1400₽ (действует 4 недели)\n\n🔻 Цены индивидуальных тренировок:\n1 тренировка (1 чел.) - 3600₽ за занятие\n1 тренировка (2 чел.) - 5000₽ за занятие\n1 тренировка (3 чел.) - 6000₽ за занятие",
-    "м. Петроградская":
-      "Адрес студии м. Петроградская.:\nУл. Газовая 10Н\n\n🔻 Расписание занятий:\nВторник 20:00\nЧетверг 20:00\nСуббота 14:00\n\n🔻 Стоимость тренировок:\n👉🏻Пробное - 950₽ (действует 4 недели)\n👉🏻12 занятий - 9600₽ (действует 4 недели)\n👉🏻12 занятий - 11400₽ (действует 6 недель)\n👉🏻1 занятие - 1100₽ (действует 4 недели)\n\n🔻 Цены индивидуальных тренировок:\n1 тренировка (1 чел.) - 3600₽ за занятие\n1 тренировка (2 чел.) - 5000₽ за занятие\n1 тренировка (3 чел.) - 6000₽ за занятие",
-    "м. Выборгская":
-      "Адрес студии м. Выборгская.:\nМалый Сампсониевский пр., дом 2\n\n🔻 Расписание занятий:\nПонедельник 20:30\nСреда 20:30\nСуббота 14:00\n\n🔻 Стоимость тренировок:\n👉🏻Пробное - 950₽ (действует 4 недели)\n👉🏻12 занятий - 9600₽(действует 4 недели)\n👉🏻12 занятий - 11400₽ (действует 6 недель)\n👉🏻1 занятие - 1100₽ (действует 4 недели)\n\n🔻 Цены индивидуальных тренировок:\n1 тренировка (1 чел.) - 3600₽ за занятие\n1 тренировка (2 чел.) - 5000₽ за занятие\n1 тренировка (3 чел.) - 6000₽ за занятие",
-    "м. Московские Ворота":
-      "Адрес студии м. Московские Ворота.:\nУл. Заставская, 33П\n\n🔻 Расписание занятий:\nВторник 20:40\nЧетверг 20:40\nСуббота 14:00\n\n🔻 Стоимость тренировок:\n👉🏻Пробное - 950₽ (действует 4 недели)\n👉🏻12 занятий - 9600₽ (действует 4 недели)\n👉🏻12 занятий - 11400₽ (действует 6 недель)\n👉🏻1 занятие - 1100₽ (действует 4 недели)\n\n🔻 Цены индивидуальных тренировок:\n1 тренировка (1 чел.) - 3600₽ за занятие\n1 тренировка (2 чел.) - 5000₽ за занятие\n1 тренировка (3 чел.) - 6000₽ за занятие",
-    "ул. Бузанда":
-      "Адрес студии на ул. Бузанда.:\nУл. Павстоса Бузанда, 1/3\n\n🔻 Расписание занятий:\nПонедельник 08:30 (утро) \nСреда 08:30 (утро) \nПятница 08:30 (утро) \n\n🔻 Стоимость тренировок:\n👉🏻Пробное - 5000դր. (действует 4 недели)\n👉🏻12 занятий - 60000դր. (действует 6 недель)\n👉🏻1 занятие - 7000դր. (действует 4 недели)\n\n🔻 Цены индивидуальных тренировок:\n1 тренировка (1 чел.) - 12500դր. за занятие\n1 тренировка (2 чел.) - 17000դր. за занятие\n1 тренировка (3 чел.) - 21000դր. за занятие",
     super_calisthenics:
       "Стоимость онлайн-курса «SuperCalisthenics»:\n👉🏻 12 занятий (доступ 6 недель):\n9600₽ | 105€\n👉🏻 36 занятий (доступ 14 недель):\n23400₽ | 249€\n👉🏻 Пробная тренировка (тест-силы)\n950₽ | 10€",
     handstand:
@@ -863,30 +278,6 @@ function generateKeyboard(tag) {
     buttonsData.ds.RUB.forEach((button) => keyboard.add(button).row());
   } else if (tag === "ds_eur") {
     buttonsData.ds.EUR.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "MSC_group_YCG") {
-    buttonsData.group.MSCYCG.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "MSC_group_ELF") {
-    buttonsData.group.MSCELF.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "SPB_group_SPI") {
-    buttonsData.group.SPBSPI.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "SPB_group_RTC") {
-    buttonsData.group.SPBRTC.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "SPB_group_HKC") {
-    buttonsData.group.SPBHKC.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "MSC_personal_YCG") {
-    buttonsData.personal.MSCYCG.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "MSC_personal_ELF") {
-    buttonsData.personal.MSCELF.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "SPB_personal_SPI") {
-    buttonsData.personal.SPBSPI.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "SPB_personal_RTC") {
-    buttonsData.personal.SPBRTC.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "SPB_personal_HKC") {
-    buttonsData.personal.SPBHKC.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "YVN_group_GFG") {
-    buttonsData.group.YVNGFG.forEach((button) => keyboard.add(button).row());
-  } else if (tag === "YVN_personal_GFG") {
-    buttonsData.personal.YVNGFG.forEach((button) => keyboard.add(button).row());
   } else {
     // Если тег не распознан, возвращаем null
     return null;
@@ -920,32 +311,6 @@ async function sendToWebhook(studio, telegramId) {
     console.log("Данные успешно отправлены на вебхук");
   } catch (error) {
     console.error("Ошибка при отправке на вебхук:", error.message);
-  }
-}
-
-// Функция для проверки наличия пользователя в Airtable
-async function checkUserInAirtable(tgId) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-  const clientsId = process.env.AIRTABLE_CLIENTS_ID;
-
-  const url = `https://api.airtable.com/v0/${baseId}/${clientsId}?filterByFormula={tgId}='${tgId}'`;
-  const headers = {
-    Authorization: `Bearer ${apiKey}`,
-  };
-
-  try {
-    const response = await axios.get(url, { headers });
-    console.log(
-      `Результат проверки пользователя: ${response.data.records.length > 0}`
-    );
-    return response.data.records.length > 0; // Если записи найдены, возвращаем true
-  } catch (error) {
-    console.error(
-      "Error checking user in Airtable:",
-      error.response ? error.response.data : error.message
-    );
-    return false; // В случае ошибки также возвращаем false
   }
 }
 
@@ -1123,88 +488,15 @@ bot.command("start", async (ctx) => {
   console.log(`Ник: ${user.username || "не указан"}`);
   console.log(`Команда /start от пользователя: ${user.id}`);
 
-  // Проверка наличия пользователя в Airtable
-  const userInfo = await getUserInfo(tgId);
-
-  if (userInfo) {
-    console.log("Пользователь найден в базе Clients");
-    await handleExistingUserScenario(ctx);
-  } else {
-    // Получаем параметры после /start
-    const args = ctx.message.text.split(" ");
-    const startParam = args[1] || null; // Получаем значение параметра (online/offline)
-
-    try {
-      await Session.findOneAndUpdate(
-        { userId: ctx.from.id.toString() },
-        { userId: ctx.from.id.toString(), step: "start" },
-        { upsert: true }
-      );
-
-      const fullName = `${ctx.from.first_name} ${
-        ctx.from.last_name || ""
-      }`.trim();
-
-      console.log("Пользователя нет в базе Clients");
-      // Сохраняем идентификатор записи в сессии
-      const airtableId = await sendFirstAirtable(
-        ctx.from.id,
-        fullName,
-        ctx.from.username
-      );
-      const session = await Session.findOne({ userId: ctx.from.id.toString() });
-      session.airtableId = airtableId; // Сохраняем airtableId в сессии
-      await session.save();
-
-      if (startParam === "online") {
-        console.log("Пользователь пришел по URL для online.");
-        // Покажите начальное меню для online
-        await ctx.reply(
-          "Привет! Подскажите, пожалуйста, какой курс вас интересует?",
-          {
-            reply_markup: new InlineKeyboard()
-              .add({
-                text: "Онлайн-курс «SuperCalisthenics»",
-                callback_data: "super_calisthenics",
-              })
-              .row()
-              .add({
-                text: "Оналйн-курс «Стойка на руках»",
-                callback_data: "handstand",
-              }),
-          }
-        );
-      } else if (startParam === "offline") {
-        console.log("Пользователь пришел по URL для offline.");
-        // Покажите начальное меню для offline
-        await ctx.reply(
-          "Привет! Подскажите, пожалуйста, какой город вас интересует?",
-          {
-            reply_markup: new InlineKeyboard()
-              .add({ text: "Москва", callback_data: "city_moscow" })
-              .row()
-              .add({ text: "Санкт-Петербург", callback_data: "city_spb" })
-              .row()
-              .add({ text: "Ереван", callback_data: "city_yerevan" }),
-          }
-        );
-      } else {
-        // Если параметр не указан или не распознан
-        console.log("Не понятно откуда пришел, загружаю расширенное меню.");
-        await ctx.reply("Привет! Подскажите, пожалуйста, что вас интересует?", {
-          reply_markup: new InlineKeyboard()
-            .add({ text: "Онлайн-курсы", callback_data: "online" })
-            .row()
-            .add({ text: "Москва", callback_data: "city_moscow" })
-            .row()
-            .add({ text: "Санкт-Петербург", callback_data: "city_spb" })
-            .row()
-            .add({ text: "Ереван", callback_data: "city_yerevan" }),
-        });
-      }
-    } catch (error) {
-      console.error("Произошла ошибка:", error);
-    }
+  try {
+    await ctx.reply("Привет! Подскажите, пожалуйста, что вас интересует?", {
+      reply_markup: new InlineKeyboard().add({
+        text: "Онлайн курс «Подтягивания для девушек»",
+        callback_data: "pullups_for_ladies",
+      }),
+    });
+  } catch (error) {
+    console.error(`Не удалось отправить сообщение`, error);
   }
 });
 
@@ -1213,87 +505,15 @@ bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
-  if (
-    action === "city_moscow" ||
-    action === "city_spb" ||
-    action === "city_yerevan"
-  ) {
+  if (action === "pullups_for_ladies") {
     let city;
     let studiosKeyboard;
-    if (action === "city_moscow") {
-      city = "Москва";
-      console.log("Выбрал Москву, отправил список студий");
-      // Кнопки для студий в Москве
-      studiosKeyboard = new InlineKeyboard()
-        .add({
-          text: "м. 1905г.",
-          callback_data: "studio_ycg",
-        })
-        .row()
-        .add({ text: "м. Октябрьская", callback_data: "studio_elf" });
-    } else if (action === "city_spb") {
-      city = "Санкт-Петербург";
-      console.log("Выбрал Питер, отправил список студий");
-      // Кнопки для студий в Санкт-Петербурге
-      studiosKeyboard = new InlineKeyboard()
-        .add({ text: "м. Петроградкая", callback_data: "studio_rtc" })
-        .row()
-        .add({ text: "м. Выборгская", callback_data: "studio_hkc" })
-        .row()
-        .add({
-          text: "м. Московские Ворота",
-          callback_data: "studio_spi",
-        });
-    } else if (action === "city_yerevan") {
-      city = "Ереван";
-      console.log("Выбрал Ереван, отправил список студий");
-      // Кнопки для студий в Ереване
-      studiosKeyboard = new InlineKeyboard().add({
-        text: "ул. Бузанда",
-        callback_data: "studio_gof",
-      });
-    }
-
-    // Сохраняем город в сессии
-    session.city = city;
-    await session.save();
-
-    // Отправляем сообщение с выбором студии
-    await ctx.reply(`Выберите, пожалуйста, студию:`, {
-      reply_markup: studiosKeyboard,
-    });
-  }
-  // Обрабатываем выбор студии
-  else if (action.startsWith("studio_")) {
     let studio;
-    let priceTag;
-    if (action === "studio_ycg") {
-      studio = "м. 1905г.";
-      priceTag = "MSC_personal_YCG";
-      console.log("Выбрал студию м. 1905г., отправил основное меню");
-    } else if (action === "studio_elf") {
-      studio = "м. Октябрьская";
-      priceTag = "MSC_personal_ELF";
-      console.log("Выбрал студию м. Октябрьская, отправил основное меню");
-    } else if (action === "studio_rtc") {
-      studio = "м. Петроградская";
-      priceTag = "SPB_personal_RTC";
-      console.log("Выбрал студию м. Петроградская, отправил основное меню");
-    } else if (action === "studio_hkc") {
-      studio = "м. Выборгская";
-      priceTag = "SPB_personal_HKC";
-      console.log("Выбрал студию м. Выборгская, отправил основное меню");
-    } else if (action === "studio_spi") {
-      studio = "м. Московские Ворота";
-      priceTag = "SPB_personal_SPI";
-      console.log("Выбрал студию м. Московские ворота, отправил основное меню");
-    } else if (action === "studio_gof") {
-      studio = "ул. Бузанда";
-      priceTag = "YVN_personal_GFG";
-      console.log("Выбрал студию ул. Бузанда, отправил основное меню");
-    }
+    city = "pullups_for_ladies";
+    studio = "pullups_for_ladies";
 
     // Сохраняем выбранную студию в сессии
+    session.city = city;
     session.studio = studio;
     session.priceTag = priceTag;
     await session.save();
@@ -1303,10 +523,10 @@ bot.on("callback_query:data", async (ctx) => {
 
     // Отправляем сообщение с основным меню
     await ctx.reply(
-      "Наши тренировки помогут вам:\n▫️Стать сильнее\n▫️Повысить тонус\n▫️Научиться владеть телом\n▫️Найти друзей и единомышленников\n\nВоспользуйтесь нижним меню, чтобы выбрать нужную команду.",
+      "Наши тренировки помогут вам:\n▫️Стать сильнее\n▫️Повысить тонус\n▫️Научиться подтягиваться\n▫️Найти друзей и единомышленников\n\nВоспользуйтесь нижним меню, чтобы выбрать нужную команду.",
       {
         reply_markup: new Keyboard()
-          .text("Записаться на тренировку")
+          .text("Купить по спец. предложению")
           .row()
           .text("Как проходят тренировки")
           .text("Цены и расписание")
@@ -1316,127 +536,6 @@ bot.on("callback_query:data", async (ctx) => {
           .resized(), // делает клавиатуру компактной
       }
     );
-  }
-  // Добавляем обработчик для "Поменять город"
-  else if (action === "change_city") {
-    console.log("Нажал НАЗАД, предложил смену города");
-    await ctx.reply("Выберите город:", {
-      reply_markup: new InlineKeyboard()
-        .add({ text: "Москва", callback_data: "city_moscow" })
-        .row()
-        .add({ text: "Санкт-Петербург", callback_data: "city_spb" })
-        .row()
-        .add({ text: "Ереван", callback_data: "city_yerevan" }),
-    });
-  }
-  if (action === "online") {
-    // Сохраняем выбранный формат
-    session.city = "online";
-    await session.save();
-
-    // Обновляем запись в Airtable
-    await updateAirtableRecord(session.airtableId, session.city, "");
-
-    // Отправляем сообщение с основным меню
-    await ctx.reply("Выберите, пожалуйста, курс:", {
-      reply_markup: new InlineKeyboard()
-        .add({
-          text: "Онлайн-курс «SuperCalisthenics»",
-          callback_data: "super_calisthenics",
-        })
-        .row()
-        .add({
-          text: "Оналйн-курс «Стойка на руках»",
-          callback_data: "handstand",
-        }),
-    });
-  }
-
-  if (action === "super_calisthenics" || action === "handstand") {
-    let course;
-    if (action === "super_calisthenics") {
-      course = "super_calisthenics";
-      console.log("Выбрал SuperCalisthenics, отправил основное меню");
-
-      session.city = "online";
-      session.studio = "super_calisthenics";
-      await session.save();
-
-      // Обновляем запись в Airtable
-      await updateAirtableRecord(
-        session.airtableId,
-        session.city,
-        session.studio
-      );
-
-      // Отправляем сообщение с основным меню
-      await ctx.reply(
-        "Наш флагманский курс — SuperCalisthenics — это инновационный онлайн-курс, где тренировки адаптируются под ваш уровень физической подготовки и цели.\nВоспользуйтесь нижним меню, чтобы выбрать нужную команду.",
-        {
-          reply_markup: new Keyboard()
-            .text("📝 Записаться на курс")
-            .row()
-            .text("🤸🏼‍♀️ Как проходят занятия")
-            .text("💰 Цены")
-            .row()
-            .text("⬅️ Назад")
-            .text("❓ FAQ")
-            .resized(), // делает клавиатуру компактной
-        }
-      );
-    } else if (action === "handstand") {
-      course = "handstand";
-      console.log("Выбрал Стойка на руках, отправил основное меню");
-
-      session.city = "online";
-      session.studio = "handstand";
-      await session.save();
-      // Обновляем запись в Airtable
-      await updateAirtableRecord(
-        session.airtableId,
-        session.city,
-        session.studio
-      );
-
-      // Отправляем сообщение с основным меню
-      await ctx.reply(
-        "Стойка на руках — это одно из лучших упражнений для развития силы и чувства баланса. А еще это классное достижение, которое будет тебя всегда радовать.\nВоспользуйтесь нижним меню, чтобы выбрать нужную команду.",
-        {
-          reply_markup: new Keyboard()
-            .text("📝 Записаться на курс")
-            .row()
-            .text("🤸🏼‍♀️ Про курс")
-            .text("💰 Цены")
-            .row()
-            .text("⬅️ Назад")
-            .text("❓ FAQ")
-            .resized(), // делает клавиатуру компактной
-        }
-      );
-    }
-  }
-
-  if (action === "deposit") {
-    console.log("Нажал кнопку пополнить депозит");
-    // Проверяем, существует ли сессия
-    let session = await Session.findOne({ userId: ctx.from.id.toString() });
-    if (!session) {
-      console.log(
-        `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
-      );
-      session = new Session({
-        userId: ctx.from.id.toString(),
-        step: "start",
-        userState: {},
-      });
-      await session.save();
-    }
-
-    session.userState = { awaitingDeposit: true };
-    await session.save();
-    await ctx.reply("Введите сумму депозита:");
-    await ctx.answerCallbackQuery();
-    return;
   } else if (action === "edit_info") {
     console.log("Изменение данных (ФИ, тел., email)");
     await ctx.reply("Что хотите поменять?", {
@@ -1476,7 +575,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
 
       if (
-        session.studio === "super_calisthenics" ||
+        session.studio === "pullups_for_ladies" ||
         session.studio === "handstand"
       ) {
         await ctx.reply(
@@ -1493,18 +592,6 @@ bot.on("callback_query:data", async (ctx) => {
         );
         session.step = "awaiting_card_type";
         await session.save(); // Сохранение сессии после изменения шага
-      } else {
-        await ctx.reply("Спасибо! На какую тренировку хотите записаться?", {
-          reply_markup: new InlineKeyboard()
-            .add({ text: "Групповую", callback_data: "group_training" })
-            .row()
-            .add({
-              text: "Персональную (или сплит)",
-              callback_data: "personal_training",
-            }),
-        });
-        session.step = "awaiting_training_type";
-        await session.save(); // Сохранение сессии после изменения шага
       }
 
       // Отправляем данные в Airtable
@@ -1517,52 +604,18 @@ bot.on("callback_query:data", async (ctx) => {
         session.studio // Студия пользователя
       );
     }
-  } else if (session.step === "awaiting_training_type") {
-    if (action === "group_training") {
-      console.log("Выбрал групповые тренировки, отправляю расписание");
-      // Получаем данные студии из сессии и telegram_id
-      const studio = session.studio; // Берем студию из сессии
-      const telegramId = ctx.from.id; // ID пользователя Telegram
-
-      // Отправляем данные на вебхук
-      await sendToWebhook(studio, telegramId);
-
-      // Сохраняем шаг, если нужно
-      session.step = "awaiting_next_step";
-      await session.save();
-    } else if (action === "personal_training") {
-      console.log("Выбрал персональные тренировки, отправляю сообщение");
-      // Персональная тренировка - показываем персональное меню
-      await ctx.reply(
-        "Напишите, пожалуйста, в какой день и время вам удобно тренироваться (лучше указать диапазон) и сколько человек будет  — я согласую занятие с тренером и вернусь к вам как можно скорее."
-      );
-
-      session.step = "awaiting_personal_training_details";
-      await session.save();
-    }
   } else if (session.step === "awaiting_card_type") {
     if (action === "russian_card") {
       console.log("Выбрали россискую карту, отправляю тарифы");
       // Получаем данные студии из сессии и telegram_id
 
-      if (session.studio === "super_calisthenics") {
+      if (session.studio === "pullups_for_ladies") {
         console.log("Отправляю тарифы");
         await ctx.reply("Выберите подходящий тариф для оплаты:", {
-          reply_markup: new InlineKeyboard()
-            .add({
-              text: "Пробное (950₽) - доступ 4 недели",
-              callback_data: "buy_950_powertest_ru",
-            })
-            .row()
-            .add({
-              text: "12 занятий (9600₽) - доступ 6 недель",
-              callback_data: "buy_9600_ds_rub",
-            })
-            .row()
-            .add({
-              text: "36 занятий (23400₽) - доступ 14 недель",
-              callback_data: "buy_23400_ds_rub",
-            }),
+          reply_markup: new InlineKeyboard().add({
+            text: "Спец предложение 6900₽ / месяц",
+            callback_data: "buy_6900_ds_rub",
+          }),
         });
         session.step = "online_buttons";
         await session.save(); // Сохранение сессии после изменения шага
@@ -1585,24 +638,13 @@ bot.on("callback_query:data", async (ctx) => {
       }
     } else if (action === "foreign_card") {
       console.log("Выбрали зарбужную карту, отправляю тарифы");
-      if (session.studio === "super_calisthenics") {
+      if (session.studio === "pullups_for_ladies") {
         console.log("Отправляю тарифы");
         await ctx.reply("Выберите подходящий тариф для оплаты:", {
-          reply_markup: new InlineKeyboard()
-            .add({
-              text: "Пробное (тест-силы) 10€ - действует 4 недели",
-              callback_data: "buy_10_powertest_eur",
-            })
-            .row()
-            .add({
-              text: "12 занятий (105€) - действует 6 недель",
-              callback_data: "buy_105_ds_eur",
-            })
-            .row()
-            .add({
-              text: "36 занятий (249€) - действует 14 недель",
-              callback_data: "buy_249_ds_eur",
-            }),
+          reply_markup: new InlineKeyboard().add({
+            text: "Спец. предложение 69€ / месяц",
+            callback_data: "buy_69_ds_eur",
+          }),
         });
         session.step = "online_buttons";
         await session.save(); // Сохранение сессии после изменения шага
@@ -1685,7 +727,7 @@ bot.on("callback_query:data", async (ctx) => {
     session.step = "awaiting_later_date";
     await session.save();
   } else if (action.startsWith("a_da")) {
-    console.log("ДА - планиурет продолжать тренировки с нами");
+    console.log("  тренировки с нами");
     try {
       const tgId = ctx.from.id;
       const userInfo = await getUserInfo(tgId);
@@ -1882,10 +924,10 @@ bot.on("message:text", async (ctx) => {
 
   // Обработка кнопок для студий
   if (
-    userMessage === "Записаться на тренировку" ||
+    userMessage === "Купить по спец. предложению" ||
     userMessage === "📝 Записаться на курс"
   ) {
-    console.log("Нажал на кнопку - записаться на тренировку");
+    console.log("Нажал на кнопку - Купить по спец. предложению");
     // Удаляем стационарное меню
     await ctx.reply("Пожалуйста, введите вашу фамилию и имя:", {
       reply_markup: {
@@ -1901,42 +943,6 @@ bot.on("message:text", async (ctx) => {
   // Если сообщение начинается с '/', это команда, и мы её обрабатываем отдельно
   else if (userMessage.startsWith("/")) {
     switch (userMessage) {
-      case "/group":
-        console.log("Переключил на /group");
-        await ctx.reply("Переключено на групповые тренировки.", {
-          reply_markup: {
-            keyboard: new Keyboard()
-              .text("Узнать баланс")
-              .text("Купить групповые тренировки")
-              .build(),
-            resize_keyboard: true,
-          },
-        });
-        break;
-      case "/personal":
-        console.log("Переключил на /personal");
-        await ctx.reply("Переключено на персональные тренировки.", {
-          reply_markup: {
-            keyboard: new Keyboard()
-              .text("Узнать баланс")
-              .text("Купить персональные тренировки")
-              .build(),
-            resize_keyboard: true,
-          },
-        });
-        break;
-      case "/online":
-        console.log("Переключил на /online");
-        await ctx.reply("Переключено на онлайн тренировки.", {
-          reply_markup: {
-            keyboard: new Keyboard()
-              .text("Узнать баланс")
-              .text("Купить онлайн тренировки")
-              .build(),
-            resize_keyboard: true,
-          },
-        });
-        break;
       case "/operator":
         console.log("Вызвал /operator");
         await ctx.reply(
@@ -1947,95 +953,6 @@ bot.on("message:text", async (ctx) => {
         await ctx.reply("Неизвестная команда. Попробуйте снова.");
     }
     return; // Завершаем обработку, чтобы не продолжать ниже
-  }
-
-  // Обработчик для кнопки "Купить тренировки"
-  else if (userMessage === "Купить групповые тренировки") {
-    // const tgId = ctx.from.id;
-    const userInfo = await getUserInfo(tgId);
-    console.log("Нажал купить групповые тренировки");
-
-    if (userInfo) {
-      const newString = userInfo.tag
-        .replace("personal", "group")
-        .replace("ds", "dd");
-      const keyboard = generateKeyboard(newString);
-      if (keyboard) {
-        await ctx.reply("Выберите тариф:", {
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.reply(
-          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке."
-        );
-      }
-    } else {
-      await ctx.reply(
-        "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
-      );
-    }
-  } else if (userMessage === "Купить персональные тренировки") {
-    const tgId = ctx.from.id;
-    const userInfo = await getUserInfo(tgId);
-    console.log("нажал купить персональные тренировки");
-    if (userInfo) {
-      const newString = userInfo.tag
-        .replace("group", "personal")
-        .replace("ds", "dd");
-      const keyboard = generateKeyboard(newString);
-      if (keyboard) {
-        await ctx.reply("Выберите тариф:", {
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.reply(
-          "Ваш тег не распознан. Пожалуйста, обратитесь к поддержке."
-        );
-      }
-    } else {
-      await ctx.reply(
-        "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
-      );
-    }
-  } else if (userMessage === "Купить онлайн тренировки") {
-    const tgId = ctx.from.id;
-    const userInfo = await getUserInfo(tgId);
-    console.log("нажал купить онлайн тренировки");
-
-    if (userInfo.tag.includes("ds") && userInfo.tag.includes("rub")) {
-      const keyboard = generateKeyboard("ds_rub");
-      await ctx.reply("Выберите тариф:", {
-        reply_markup: keyboard,
-      });
-    } else if (userInfo.tag.includes("ds") && userInfo.tag.includes("eur")) {
-      const keyboard = generateKeyboard("ds_eur");
-      await ctx.reply("Выберите тариф:", {
-        reply_markup: keyboard,
-      });
-    } else if (!userInfo.tag.includes("ds")) {
-      const keyboard = generateKeyboard("ds_rub");
-      await ctx.reply("Выберите тариф:", {
-        reply_markup: keyboard,
-      });
-    } else {
-      await ctx.reply(
-        "Не удалось получить информацию о вашем теге. Пожалуйста, попробуйте позже."
-      );
-    }
-  } else if (userMessage === "Узнать баланс") {
-    console.log("Нажал кнопку Узнать баланс");
-    const tgId = ctx.from.id;
-    const result = await getUserInfo(tgId);
-
-    if (result !== null) {
-      await ctx.reply(
-        `Ваш текущий баланс: ${result.balance} ${result.currency}`
-      );
-    } else {
-      await ctx.reply(
-        "Не удалось получить информацию о балансе. Пожалуйста, попробуйте позже."
-      );
-    }
   } else if (userMessage === "Как проходят тренировки") {
     console.log("Нажал на кнопку - Как проходят тренировки");
     await ctx.reply(
