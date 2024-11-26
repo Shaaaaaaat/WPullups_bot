@@ -491,7 +491,7 @@ bot.command("start", async (ctx) => {
   try {
     await ctx.reply("Привет! Подскажите, пожалуйста, что вас интересует?", {
       reply_markup: new InlineKeyboard().add({
-        text: "Онлайн курс «Подтягивания для девушек»",
+        text: "Онлайн-курс «Подтягивания для девушек»",
         callback_data: "pullups_for_ladies",
       }),
     });
@@ -512,14 +512,28 @@ bot.on("callback_query:data", async (ctx) => {
     city = "pullups_for_ladies";
     studio = "pullups_for_ladies";
 
+    const fullName = `${ctx.from.first_name} ${
+      ctx.from.last_name || ""
+    }`.trim();
+
     // Сохраняем выбранную студию в сессии
     session.city = city;
     session.studio = studio;
-    session.priceTag = priceTag;
+    // Сохраняем идентификатор записи в сессии
+    const airtableId = await sendFirstAirtable(
+      ctx.from.id,
+      fullName,
+      ctx.from.username
+    );
+    session.airtableId = airtableId; // Сохраняем airtableId в сессии
     await session.save();
 
     // Обновляем запись в Airtable
-    await updateAirtableRecord(session.airtableId, session.city, studio);
+    await updateAirtableRecord(
+      session.airtableId,
+      session.city,
+      session.studio
+    );
 
     // Отправляем сообщение с основным меню
     await ctx.reply(
