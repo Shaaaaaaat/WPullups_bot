@@ -503,37 +503,31 @@ bot.command("start", async (ctx) => {
 // Обработчик выбора города
 bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
-  // const session = await Session.findOne({ userId: ctx.from.id.toString() });
+  const session = await Session.findOne({ userId: ctx.from.id.toString() });
+
+  let city;
+  let studio;
+  city = "pullups_for_ladies";
+  studio = "pullups_for_ladies";
+
+  const fullName = `${ctx.from.first_name} ${ctx.from.last_name || ""}`.trim();
+
+  // Сохраняем выбранную студию в сессии
+  session.city = city;
+  session.studio = studio;
+  // Сохраняем идентификатор записи в сессии
+  const airtableId = await sendFirstAirtable(
+    ctx.from.id,
+    fullName,
+    ctx.from.username
+  );
+  session.airtableId = airtableId; // Сохраняем airtableId в сессии
+  await session.save();
+
+  // Обновляем запись в Airtable
+  await updateAirtableRecord(session.airtableId, session.city, session.studio);
 
   if (action === "pullups_for_ladies") {
-    let city;
-    let studio;
-    city = "pullups_for_ladies";
-    studio = "pullups_for_ladies";
-
-    const fullName = `${ctx.from.first_name} ${
-      ctx.from.last_name || ""
-    }`.trim();
-
-    // Сохраняем выбранную студию в сессии
-    session.city = city;
-    session.studio = studio;
-    // Сохраняем идентификатор записи в сессии
-    const airtableId = await sendFirstAirtable(
-      ctx.from.id,
-      fullName,
-      ctx.from.username
-    );
-    session.airtableId = airtableId; // Сохраняем airtableId в сессии
-    await session.save();
-
-    // Обновляем запись в Airtable
-    await updateAirtableRecord(
-      session.airtableId,
-      session.city,
-      session.studio
-    );
-
     // Отправляем сообщение с основным меню
     await ctx.reply(
       "Наши тренировки помогут вам:\n▫️Стать сильнее\n▫️Повысить тонус\n▫️Научиться подтягиваться\n▫️Найти друзей и единомышленников\n\nВоспользуйтесь нижним меню, чтобы выбрать нужную команду.",
