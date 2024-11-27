@@ -160,14 +160,14 @@ const actionData = {
   buy_6900_ds_rub: {
     sum: 5,
     lessons: 1,
-    tag: "pullups_for_ladies_ds_rub",
+    tag: "pullups_for_ladies_rub",
     currency: "RUB",
     paymentSystem: "robokassa",
   },
   buy_69_ds_eur: {
     sum: 1,
     lessons: 1,
-    tag: "pullups_for_ladies_ds_eur",
+    tag: "pullups_for_ladies_eur",
     currency: "EUR",
     paymentSystem: "stripeEUR",
     studio: "pullups_for_ladies",
