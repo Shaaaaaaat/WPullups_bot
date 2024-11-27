@@ -158,14 +158,14 @@ async function createStripePaymentLink(priceId, paymentId) {
 
 const actionData = {
   buy_6900_ds_rub: {
-    sum: 5,
+    sum: 6900,
     lessons: 1,
     tag: "pullups_for_ladies_rub",
     currency: "RUB",
     paymentSystem: "robokassa",
   },
   buy_69_ds_eur: {
-    sum: 1,
+    sum: 69,
     lessons: 1,
     tag: "pullups_for_ladies_eur",
     currency: "EUR",
