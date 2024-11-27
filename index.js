@@ -503,11 +503,10 @@ bot.command("start", async (ctx) => {
 // Обработчик выбора города
 bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
-  const session = await Session.findOne({ userId: ctx.from.id.toString() });
+  // const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
   if (action === "pullups_for_ladies") {
     let city;
-    let studiosKeyboard;
     let studio;
     city = "pullups_for_ladies";
     studio = "pullups_for_ladies";
