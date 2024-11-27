@@ -160,17 +160,17 @@ const actionData = {
   buy_6900_ds_rub: {
     sum: 5,
     lessons: 1,
-    tag: "ds_rub",
+    tag: "pullups_for_ladies_ds_rub",
     currency: "RUB",
     paymentSystem: "robokassa",
   },
   buy_69_ds_eur: {
     sum: 1,
     lessons: 1,
-    tag: "ds_eur",
+    tag: "pullups_for_ladies_ds_eur",
     currency: "EUR",
     paymentSystem: "stripeEUR",
-    studio: "super_calisthenics",
+    studio: "pullups_for_ladies",
   },
 };
 
