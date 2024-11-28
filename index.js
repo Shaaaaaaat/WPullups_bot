@@ -511,8 +511,8 @@ bot.on("callback_query:data", async (ctx) => {
   const fullName = `${ctx.from.first_name} ${ctx.from.last_name || ""}`.trim();
 
   // Сохраняем выбранную студию в сессии
-  session.city = city;
-  session.studio = studio;
+  session.city = "pullups_for_ladies";
+  session.studio = "pullups_for_ladies";
   // Сохраняем идентификатор записи в сессии
   const airtableId = await sendFirstAirtable(
     ctx.from.id,
