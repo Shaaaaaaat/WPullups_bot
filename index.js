@@ -505,10 +505,8 @@ bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
   const session = await Session.findOne({ userId: ctx.from.id.toString() });
 
-  let city;
-  let studio;
-  city = "pullups_for_ladies";
-  studio = "pullups_for_ladies";
+  let city = "pullups_for_ladies";
+  let studio = "pullups_for_ladies";
 
   const fullName = `${ctx.from.first_name} ${ctx.from.last_name || ""}`.trim();
 
