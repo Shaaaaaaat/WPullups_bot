@@ -503,7 +503,19 @@ bot.command("start", async (ctx) => {
 // Обработчик выбора города
 bot.on("callback_query:data", async (ctx) => {
   const action = ctx.callbackQuery.data;
-  const session = await Session.findOne({ userId: ctx.from.id.toString() });
+
+  let session = await Session.findOne({ userId: ctx.from.id.toString() });
+  if (!session) {
+    console.log(
+      `Сессия не найдена для пользователя ${ctx.from.id}. Создаём новую.`
+    );
+    session = new Session({
+      userId: ctx.from.id.toString(),
+      step: "start",
+      userState: {},
+    });
+    await session.save();
+  }
 
   let city = "pullups_for_ladies";
   let studio = "pullups_for_ladies";
