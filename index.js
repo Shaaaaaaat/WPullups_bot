@@ -627,7 +627,7 @@ bot.on("callback_query:data", async (ctx) => {
         console.log("Отправляю тарифы");
         await ctx.reply("Выберите подходящий тариф для оплаты:", {
           reply_markup: new InlineKeyboard().add({
-            text: "Спец. цена 9600₽ / месяц",
+            text: "9600₽ / месяц",
             callback_data: "buy_9600_ds_rub",
           }),
         });
@@ -656,7 +656,7 @@ bot.on("callback_query:data", async (ctx) => {
         console.log("Отправляю тарифы");
         await ctx.reply("Выберите подходящий тариф для оплаты:", {
           reply_markup: new InlineKeyboard().add({
-            text: "Спец. цена 96€ / месяц",
+            text: "96€ / месяц",
             callback_data: "buy_96_ds_eur",
           }),
         });
