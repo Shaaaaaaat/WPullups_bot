@@ -157,15 +157,15 @@ async function createStripePaymentLink(priceId, paymentId) {
 }
 
 const actionData = {
-  buy_6900_ds_rub: {
-    sum: 6900,
+  buy_9600_ds_rub: {
+    sum: 9600,
     lessons: 1,
     tag: "pullups_for_ladies_rub",
     currency: "RUB",
     paymentSystem: "robokassa",
   },
-  buy_69_ds_eur: {
-    sum: 69,
+  buy_96_ds_eur: {
+    sum: 96,
     lessons: 1,
     tag: "pullups_for_ladies_eur",
     currency: "EUR",
@@ -627,8 +627,8 @@ bot.on("callback_query:data", async (ctx) => {
         console.log("Отправляю тарифы");
         await ctx.reply("Выберите подходящий тариф для оплаты:", {
           reply_markup: new InlineKeyboard().add({
-            text: "Спец. цена 6900₽ / месяц",
-            callback_data: "buy_6900_ds_rub",
+            text: "Спец. цена 9600₽ / месяц",
+            callback_data: "buy_9600_ds_rub",
           }),
         });
         session.step = "online_buttons";
@@ -656,8 +656,8 @@ bot.on("callback_query:data", async (ctx) => {
         console.log("Отправляю тарифы");
         await ctx.reply("Выберите подходящий тариф для оплаты:", {
           reply_markup: new InlineKeyboard().add({
-            text: "Спец. цена 69€ / месяц",
-            callback_data: "buy_69_ds_eur",
+            text: "Спец. цена 96€ / месяц",
+            callback_data: "buy_96_ds_eur",
           }),
         });
         session.step = "online_buttons";
