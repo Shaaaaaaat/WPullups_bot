@@ -165,7 +165,7 @@ const actionData = {
     paymentSystem: "robokassa",
   },
   buy_96_ds_eur: {
-    sum: 75,
+    sum: 69,
     lessons: 1,
     tag: "pullups_for_ladies_eur",
     currency: "EUR",
